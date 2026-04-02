@@ -12,6 +12,9 @@ const startServer = async () => {
     await sequelize.authenticate()
     console.log('PostgreSQL connected')
 
+    await sequelize.sync({ alter: true })
+    console.log('Database synced')
+
     await connectMongo()
 
     app.listen(PORT, () => {
