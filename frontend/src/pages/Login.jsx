@@ -21,7 +21,8 @@ export default function Login() {
       // save token
       localStorage.setItem('token', res.data.token)
 
-      alert('Login successful!')
+      localStorage.setItem('token', res.data.token)
+      window.location.href = '/'
     } catch (err) {
       alert(err.response?.data?.message || 'Login failed')
     }
