@@ -28,6 +28,9 @@ export default function Header() {
         <Link to="/about" className="hover:text-black transition">
           About Us
         </Link>
+        <Link to="/client" className="hover:text-black transition">
+          Clients
+        </Link>
       </nav>
 
       
