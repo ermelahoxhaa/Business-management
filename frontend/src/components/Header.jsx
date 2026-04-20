@@ -62,14 +62,18 @@ export default function Header() {
       <header className="header">
         <div className="header__brand">Business-Management</div>
 
-        <nav className="header__nav">
-          <Link to="/home" className="header__nav-link">
-            Home
-          </Link>
-          <Link to="/about" className="header__nav-link">
-            About Us
-          </Link>
-        </nav>
+      
+      <nav className="flex gap-6 text-gray-600">
+        <Link to="/home" className="hover:text-black transition">
+          Home
+        </Link>
+        <Link to="/about" className="hover:text-black transition">
+          About Us
+        </Link>
+        <Link to="/client" className="hover:text-black transition">
+          Clients
+        </Link>
+      </nav>
 
         <div className="header__actions">
           <button
