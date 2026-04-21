@@ -2,6 +2,7 @@ import {
   createTask,
   getAllTasks,
   getTaskById,
+  getTasksByProject,
   getTasksByAssignedUser,
   updateTask,
   deleteTask
@@ -10,7 +11,7 @@ import {
 const validStatuses = ['todo', 'in_progress', 'done']
 const validPriorities = ['low', 'medium', 'high']
 
-const normalizeTaskPayload = ({ title, description, status, priority, dueDate }) => {
+const normalizeTaskPayload = ({ title, description, status, priority, dueDate, updated_by }) => {
   const taskData = {}
 
   if (title !== undefined) taskData.title = title
@@ -18,6 +19,7 @@ const normalizeTaskPayload = ({ title, description, status, priority, dueDate })
   if (status !== undefined) taskData.status = status
   if (priority !== undefined) taskData.priority = priority
   if (dueDate !== undefined) taskData.due_date = dueDate
+  if (updated_by !== undefined) taskData.updated_by = updated_by
 
   return taskData
 }
@@ -33,6 +35,14 @@ export const createTaskService = async ({ title, description, status, priority, 
 
   if (!validPriorities.includes(priority)) {
     throw new Error('Invalid priority. Allowed values: low, medium, high')
+  }
+
+  if (!project_id || project_id <= 0) {
+    throw new Error('Valid project ID is required')
+  }
+
+  if (assigned_to !== undefined && (assigned_to <= 0 || !Number.isInteger(assigned_to))) {
+    throw new Error('Assigned user ID must be a positive integer if provided')
   }
 
   return createTask({
@@ -63,6 +73,10 @@ export const getTasksByAssignedUserService = async (userId) => {
   return getTasksByAssignedUser(userId)
 }
 
+export const getTasksByProjectService = async (projectId) => {
+  return getTasksByProject(projectId)
+}
+
 export const updateTaskService = async (id, payload) => {
   const existingTask = await getTaskById(id)
   if (!existingTask) {
@@ -77,6 +91,15 @@ export const updateTaskService = async (id, payload) => {
 
   if (updates.priority !== undefined && !validPriorities.includes(updates.priority)) {
     throw new Error('Invalid priority. Allowed values: low, medium, high')
+  }
+
+  // Business rule: cannot mark as done if title is empty
+  if (updates.status === 'done' && (!existingTask.title || !existingTask.title.trim())) {
+    throw new Error('Cannot mark task as done without a title')
+  }
+
+  if (updates.assigned_to !== undefined && (updates.assigned_to <= 0 || !Number.isInteger(updates.assigned_to))) {
+    throw new Error('Assigned user ID must be a positive integer if provided')
   }
 
   await updateTask(id, updates)

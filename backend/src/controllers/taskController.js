@@ -3,6 +3,7 @@ import {
   getAllTasksService,
   getTaskByIdService,
   getTasksByAssignedUserService,
+  getTasksByProjectService,
   updateTaskService,
   deleteTaskService
 } from '../services/taskServices.js'
@@ -37,6 +38,15 @@ export const getTaskByIdController = async (req, res) => {
 export const getTasksByAssignedUserController = async (req, res) => {
   try {
     const tasks = await getTasksByAssignedUserService(req.params.userId)
+    res.json(tasks)
+  } catch (err) {
+    res.status(400).json({ message: err.message })
+  }
+}
+
+export const getTasksByProjectController = async (req, res) => {
+  try {
+    const tasks = await getTasksByProjectService(req.params.projectId)
     res.json(tasks)
   } catch (err) {
     res.status(400).json({ message: err.message })

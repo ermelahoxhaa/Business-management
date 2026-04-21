@@ -24,8 +24,12 @@ app.get('/api/test', (req, res) => {
 
 import authRoutes from './routes/authRoutes.js'
 import taskRoutes from './routes/taskRoutes.js'
+import projectRoutes from './routes/projectRoutes.js'
+import commentRoutes from './routes/commentRoutes.js'
 
-app.use('/api/tasks', taskRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/tasks', taskRoutes)
+app.use('/api/projects', projectRoutes)
+app.use('/api/comments', commentRoutes)
 
 export default app

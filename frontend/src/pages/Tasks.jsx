@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createTask, deleteTask, getTasks, updateTask } from '../services/api'
+import { createTask, deleteTask, getTasks, updateTask, getProjects, getUsers, getComments, createComment } from '../services/api'
 
 const statusOptions = [
   { value: 'todo', label: 'To Do' },
@@ -20,11 +20,21 @@ export default function Tasks() {
     status: 'todo',
     priority: 'medium',
     dueDate: '',
-    assignedUser: ''
+    assignedUser: '',
+    projectId: ''
   })
   const [tasks, setTasks] = useState([])
+  const [projects, setProjects] = useState([])
+  const [users, setUsers] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [filters, setFilters] = useState({
+    projectId: '',
+    status: '',
+    assignedUser: ''
+  })
+  const [comments, setComments] = useState({}) // taskId: comments array
+  const [commentForms, setCommentForms] = useState({}) // taskId: comment text
 
   const loadTasks = async () => {
     try {
@@ -36,8 +46,30 @@ export default function Tasks() {
     }
   }
 
+  const loadProjects = async () => {
+    try {
+      const response = await getProjects()
+      setProjects(response.data)
+    } catch (err) {
+      console.error(err)
+      alert(err.response?.data?.message || 'Unable to load projects')
+    }
+  }
+
+  const loadUsers = async () => {
+    try {
+      const response = await getUsers()
+      setUsers(response.data)
+    } catch (err) {
+      console.error(err)
+      // If no users endpoint, ignore
+    }
+  }
+
   useEffect(() => {
     loadTasks()
+    loadProjects()
+    loadUsers()
   }, [])
 
   const resetForm = () => {
@@ -47,13 +79,74 @@ export default function Tasks() {
       status: 'todo',
       priority: 'medium',
       dueDate: '',
-      assignedUser: ''
+      assignedUser: '',
+      projectId: ''
     })
     setEditingId(null)
   }
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleFilterChange = (e) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value })
+  }
+
+  const filteredTasks = tasks.filter(task => {
+    if (filters.projectId && task.project_id !== Number(filters.projectId)) return false
+    if (filters.status && task.status !== filters.status) return false
+    if (filters.assignedUser && task.assigned_to !== Number(filters.assignedUser)) return false
+    return true
+  })
+
+  const getProjectName = (projectId) => {
+    const project = projects.find(p => p.id === projectId)
+    return project ? project.name : 'Unknown Project'
+  }
+
+  const getUserName = (userId) => {
+    if (!userId) return '-'
+    const user = users.find(u => u.id === userId)
+    return user ? user.name || user.email : `User ${userId}`
+  }
+
+  const loadComments = async (taskId) => {
+    try {
+      const response = await getComments(taskId)
+      setComments(prev => ({ ...prev, [taskId]: response.data }))
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleAddComment = async (taskId) => {
+    const commentText = commentForms[taskId] || ''
+    if (!commentText.trim()) return
+
+    try {
+      await createComment({
+        task_id: taskId,
+        comment: commentText,
+        user_id: 1 // placeholder
+      })
+      setCommentForms(prev => ({ ...prev, [taskId]: '' }))
+      loadComments(taskId)
+    } catch (err) {
+      console.error(err)
+      alert('Unable to add comment')
+    }
+  }
+
+  const handleCommentChange = (taskId, value) => {
+    setCommentForms(prev => ({ ...prev, [taskId]: value }))
+  }
+
+  const getProjectProgress = (projectId) => {
+    const projectTasks = tasks.filter(t => t.project_id === Number(projectId))
+    if (projectTasks.length === 0) return 0
+    const completed = projectTasks.filter(t => t.status === 'done').length
+    return Math.round((completed / projectTasks.length) * 100)
   }
 
   const handleSubmit = async (e) => {
@@ -68,6 +161,7 @@ export default function Tasks() {
         priority: form.priority,
         dueDate: form.dueDate,
         assigned_to: Number(form.assignedUser || 0),
+        project_id: Number(form.projectId),
         created_by: 1
       }
 
@@ -97,7 +191,8 @@ export default function Tasks() {
       status: task.status || 'todo',
       priority: task.priority || 'medium',
       dueDate: task.due_date ? task.due_date.slice(0, 10) : '',
-      assignedUser: task.assigned_to ? String(task.assigned_to) : ''
+      assignedUser: task.assigned_to ? String(task.assigned_to) : '',
+      projectId: task.project_id ? String(task.project_id) : ''
     })
   }
 
@@ -216,6 +311,24 @@ export default function Tasks() {
               />
             </div>
 
+            <div>
+              <label className="mb-2 block text-sm font-medium text-stone-700">Project</label>
+              <select
+                name="projectId"
+                value={form.projectId}
+                onChange={handleChange}
+                required
+                className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
+              >
+                <option value="">Select a project</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="sm:col-span-2 flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="submit"
@@ -237,30 +350,90 @@ export default function Tasks() {
 
         <div className="space-y-4">
           <h2 className="text-2xl font-semibold text-stone-100">Task List</h2>
+
+          <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-4 shadow-xl">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-stone-700">Filter by Project</label>
+                <select
+                  name="projectId"
+                  value={filters.projectId}
+                  onChange={handleFilterChange}
+                  className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
+                >
+                  <option value="">All Projects</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+                {filters.projectId && (
+                  <p className="mt-2 text-sm text-stone-600">
+                    Progress: {getProjectProgress(filters.projectId)}%
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-stone-700">Filter by Status</label>
+                <select
+                  name="status"
+                  value={filters.status}
+                  onChange={handleFilterChange}
+                  className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
+                >
+                  <option value="">All Statuses</option>
+                  {statusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-stone-700">Filter by Assigned User</label>
+                <select
+                  name="assignedUser"
+                  value={filters.assignedUser}
+                  onChange={handleFilterChange}
+                  className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
+                >
+                  <option value="">All Users</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name || user.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-4">
-            {tasks.length === 0 ? (
+            {filteredTasks.length === 0 ? (
               <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 text-stone-600 shadow-xl">
                 No tasks available yet.
               </div>
             ) : (
-              tasks.map((task) => (
+              filteredTasks.map((task) => (
                 <div key={task.id} className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-xl">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h3 className="text-xl font-semibold text-stone-800">{task.title}</h3>
                       <p className="text-sm text-stone-600">{task.description}</p>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-sm text-stone-700">
-                      <span className="rounded-full bg-stone-200 px-3 py-1">{task.status}</span>
-                      <span className="rounded-full bg-stone-200 px-3 py-1">{task.priority}</span>
-                      <span className="rounded-full bg-stone-200 px-3 py-1">Assigned: {task.assigned_to ?? '-'}</span>
+                    <div className="flex flex-wrap gap-2 text-sm">
+                      <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Project: {getProjectName(task.project_id)}</span>
+                      <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Assigned: {getUserName(task.assigned_to)}</span>
+                      <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Status: {statusOptions.find(s => s.value === task.status)?.label || task.status}</span>
+                      <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Priority: {priorityOptions.find(p => p.value === task.priority)?.label || task.priority}</span>
+                      <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Due: {task.due_date ? task.due_date.slice(0, 10) : 'No due date'}</span>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-col gap-4 rounded-2xl border border-stone-200/20 bg-stone-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="text-sm text-stone-500">
-                      Due: {task.due_date ? task.due_date.slice(0, 10) : 'No due date'}
-                    </div>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="flex gap-3">
                       <select
                         value={task.status}
                         onChange={(e) => handleStatusChange(task.id, e.target.value)}
@@ -272,24 +445,60 @@ export default function Tasks() {
                           </option>
                         ))}
                       </select>
-                      <div className="flex gap-3">
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(task)}
+                        className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-stone-100 transition duration-200 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(task.id)}
+                        className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm font-medium text-stone-700 transition duration-200 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => loadComments(task.id)}
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition duration-200 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300/40"
+                      >
+                        Comments ({comments[task.id]?.length || 0})
+                      </button>
+                    </div>
+                  </div>
+                  {comments[task.id] && (
+                    <div className="mt-4 rounded-2xl border border-stone-200/20 bg-stone-50 p-4">
+                      <h4 className="text-sm font-medium text-stone-700 mb-2">Comments</h4>
+                      <div className="space-y-2 mb-4">
+                        {comments[task.id].map((comment) => (
+                          <div key={comment.id} className="rounded-lg bg-white p-3 text-sm">
+                            <p className="text-stone-800">{comment.comment}</p>
+                            <p className="text-stone-500 text-xs mt-1">By {getUserName(comment.user_id)}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={commentForms[task.id] || ''}
+                          onChange={(e) => handleCommentChange(task.id, e.target.value)}
+                          placeholder="Add a comment..."
+                          className="flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 placeholder-stone-400 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
+                        />
                         <button
                           type="button"
-                          onClick={() => handleEdit(task)}
+                          onClick={() => handleAddComment(task.id)}
                           className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-stone-100 transition duration-200 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
                         >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(task.id)}
-                          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm font-medium text-stone-700 transition duration-200 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
-                        >
-                          Delete
+                          Add
                         </button>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))
             )}

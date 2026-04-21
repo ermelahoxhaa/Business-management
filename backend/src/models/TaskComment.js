@@ -1,45 +1,23 @@
 import { DataTypes } from 'sequelize'
 import sequelize from '../config/database.js'
 
-const Task = sequelize.define('Task', {
+const TaskComment = sequelize.define('TaskComment', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  status: {
-    type: DataTypes.ENUM('todo', 'in_progress', 'done'),
-    allowNull: false,
-    defaultValue: 'todo'
-  },
-  priority: {
-    type: DataTypes.ENUM('low', 'medium', 'high'),
-    allowNull: false,
-    defaultValue: 'medium'
-  },
-  due_date: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  project_id: {
+  task_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'projects',
+      model: 'tasks',
       key: 'id'
     },
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE'
   },
-  assigned_to: {
+  user_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
@@ -48,6 +26,10 @@ const Task = sequelize.define('Task', {
     },
     onDelete: 'SET NULL',
     onUpdate: 'CASCADE'
+  },
+  comment: {
+    type: DataTypes.TEXT,
+    allowNull: false
   },
   created_by: {
     type: DataTypes.INTEGER,
@@ -72,13 +54,13 @@ const Task = sequelize.define('Task', {
 }, {
   timestamps: true,
   underscored: true,
-  tableName: 'tasks',
+  tableName: 'task_comments',
   indexes: [
     {
-      fields: ['project_id']
+      fields: ['task_id']
     },
     {
-      fields: ['assigned_to']
+      fields: ['user_id']
     },
     {
       fields: ['created_by']
@@ -89,4 +71,4 @@ const Task = sequelize.define('Task', {
   ]
 })
 
-export default Task
+export default TaskComment
