@@ -8,6 +8,8 @@ import About from './pages/About'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ClientManagement from './pages/dashboard/ClientManagement'
+import Tasks from './pages/Tasks'
+import Projects from './pages/Projects'
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/client" element={<ClientManagement />} />
+        <Route path="/tasks" element={<Tasks />} />
+        <Route path="/projects" element={<Projects />} />
       </Routes>
 
       <Footer />

@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-import { createUser, findUserByEmail } from '../repositories/userRepository.js'
+import { createUser, findUserByEmail, getAllUsers } from '../repositories/userRepository.js'
 
 const isStrongPassword = (password) =>
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(password)
@@ -42,4 +42,8 @@ export const loginUser = async ({ email, password }) => {
   )
 
   return { user, token }
+}
+
+export const getAllUsersService = async () => {
+  return getAllUsers()
 }

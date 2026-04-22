@@ -1,4 +1,4 @@
-import { useNavigate, Link } from 'react-router-dom'
+﻿import { useNavigate, Link } from 'react-router-dom'
 import { useState } from 'react'
 import './Header.css'
 
@@ -24,7 +24,7 @@ function NotificationModal({ open, onClose, items }) {
             className="notification-modal__close"
             aria-label="Close notifications"
           >
-            ×
+            Ã—
           </button>
         </div>
 
@@ -72,6 +72,12 @@ export default function Header() {
         </Link>
         <Link to="/client" className="hover:text-black transition">
           Clients
+        </Link>
+        <Link to="/projects" className="hover:text-black transition">
+          Projects
+        </Link>
+        <Link to="/tasks" className="hover:text-black transition">
+          Tasks
         </Link>
       </nav>
 
