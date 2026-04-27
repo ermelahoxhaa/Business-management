@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getProjects, getTasks } from '../services/api'
+import { getProjects, getTasks, signupUser } from '../services/api'
+import { logout } from '../services/auth'
 
 const statusLabels = {
   todo: 'To Do',
@@ -19,6 +20,14 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [employeeForm, setEmployeeForm] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    role: 'employee',
+    department: ''
+  })
 
   useEffect(() => {
     const loadData = async () => {
@@ -70,6 +79,33 @@ export default function Dashboard() {
       return bDate - aDate
     })
     .slice(0, 5)
+
+  const handleEmployeeChange = (e) => {
+    setEmployeeForm({ ...employeeForm, [e.target.name]: e.target.value })
+  }
+
+  const handleAddEmployee = async (e) => {
+    e.preventDefault()
+    try {
+      await signupUser(employeeForm)
+      alert('Employee added successfully!')
+      setEmployeeForm({
+        first_name: '',
+        last_name: '',
+        email: '',
+        password: '',
+        role: 'employee',
+        department: ''
+      })
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to add employee')
+    }
+  }
+
+  const handleLogout = () => {
+    logout()
+    window.location.href = '/login'
+  }
 
   const getProjectName = (projectId) => {
     const project = projects.find((item) => item.id === projectId)
@@ -125,6 +161,12 @@ export default function Dashboard() {
                 {item.icon} {item.label}
               </button>
             ))}
+            <button
+              onClick={handleLogout}
+              className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-800 transition hover:border-red-300 hover:bg-red-100"
+            >
+              🚪 Logout
+            </button>
           </nav>
         </aside>
 
@@ -264,12 +306,70 @@ export default function Dashboard() {
 
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-2xl font-semibold text-slate-900">Employee Management</h2>
-              <p className="mt-2 text-sm text-slate-500">Manage coworkers and team assignments in future releases.</p>
+              <p className="mt-2 text-sm text-slate-500">Add new employees to the system.</p>
 
-              <div className="mt-6 space-y-4 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
-                <p className="font-medium text-slate-900">Coming soon</p>
-                <p className="text-sm leading-6">This section will display employee assignments, user load, and team member activity when the next update is ready.</p>
-              </div>
+              <form onSubmit={handleAddEmployee} className="mt-6 space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <input
+                    type="text"
+                    name="first_name"
+                    placeholder="First Name"
+                    value={employeeForm.first_name}
+                    onChange={handleEmployeeChange}
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 placeholder-slate-400 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="last_name"
+                    placeholder="Last Name"
+                    value={employeeForm.last_name}
+                    onChange={handleEmployeeChange}
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 placeholder-slate-400 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
+                    required
+                  />
+                </div>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email"
+                  value={employeeForm.email}
+                  onChange={handleEmployeeChange}
+                  className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 placeholder-slate-400 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
+                  required
+                />
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Password"
+                  value={employeeForm.password}
+                  onChange={handleEmployeeChange}
+                  className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 placeholder-slate-400 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
+                  required
+                />
+                <select
+                  name="role"
+                  value={employeeForm.role}
+                  onChange={handleEmployeeChange}
+                  className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
+                >
+                  <option value="employee">Employee</option>
+                </select>
+                <input
+                  type="text"
+                  name="department"
+                  placeholder="Department (optional)"
+                  value={employeeForm.department}
+                  onChange={handleEmployeeChange}
+                  className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 placeholder-slate-400 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
+                />
+                <button
+                  type="submit"
+                  className="w-full rounded-full bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+                >
+                  Add Employee
+                </button>
+              </form>
             </div>
           </section>
 

@@ -24,14 +24,19 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  role: {
+    type: DataTypes.ENUM('admin', 'employee'),
+    defaultValue: 'employee',
+    allowNull: false
+  },
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   }
 }, {
-  timestamps: true,        
-  underscored: true,       
-  tableName: 'users'       
+  timestamps: true,
+  underscored: true,
+  tableName: 'users'
 })
 
 export default User

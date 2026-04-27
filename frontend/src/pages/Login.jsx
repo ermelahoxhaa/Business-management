@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { loginUser } from '../services/api'
+import { setAuthData } from '../services/auth'
 
 export default function Login() {
   const [form, setForm] = useState({
@@ -18,11 +19,15 @@ export default function Login() {
     try {
       const res = await loginUser(form)
 
-      // save token
-      localStorage.setItem('token', res.data.token)
+      // save token, user, and role using auth helper
+      setAuthData(res.data.token, res.data.user, res.data.user.role)
 
-      localStorage.setItem('token', res.data.token)
-      window.location.href = '/'
+      // redirect based on role
+      if (res.data.user.role === 'admin') {
+        window.location.href = '/dashboard'
+      } else {
+        window.location.href = '/home'
+      }
     } catch (err) {
       alert(err.response?.data?.message || 'Login failed')
     }

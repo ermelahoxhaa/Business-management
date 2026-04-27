@@ -23,7 +23,8 @@ export const registerUser = async ({ first_name, last_name, email, password, pas
     first_name,
     last_name,
     email,
-    password_hash: hashed,   
+    password_hash: hashed,
+    role: 'employee'  // Default role for new users
   })
 }
 
@@ -34,10 +35,10 @@ export const loginUser = async ({ email, password }) => {
   const isMatch = await bcrypt.compare(password, user.password_hash)
   if (!isMatch) throw new Error('Invalid credentials')
 
- 
+
   const token = jwt.sign(
-    { id: user.id, email: user.email },
-    process.env.JWT_SECRET,
+    { id: user.id, email: user.email, role: user.role },
+    process.env.JWT_SECRET || 'fallback_secret',
     { expiresIn: '1d' }
   )
 

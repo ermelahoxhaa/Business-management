@@ -1,6 +1,7 @@
 import { useNavigate, Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './Header.css'
+import { isAuthenticated, logout } from '../services/auth'
 
 const notifications = [
   { id: 1, label: 'New project request submitted.', time: '2m ago' },
@@ -50,7 +51,12 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
 
+  useEffect(() => {
+    setIsLoggedIn(isAuthenticated())
+  }, [])
+
   const handleLogout = () => {
+    logout()
     setIsLoggedIn(false)
     navigate('/login')
   }
