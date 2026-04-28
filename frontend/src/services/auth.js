@@ -30,6 +30,7 @@ export const logout = () => {
   // Clear localStorage as backup
   localStorage.removeItem('token')
   localStorage.removeItem('user')
+  localStorage.removeItem('role')
 }
 
 export const getToken = () => {

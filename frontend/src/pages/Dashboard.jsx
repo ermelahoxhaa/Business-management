@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { getProjects, getTasks, signupUser } from '../services/api'
 import { logout } from '../services/auth'
 
@@ -16,6 +16,7 @@ const statusClasses = {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [projects, setProjects] = useState([])
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -104,7 +105,7 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     logout()
-    window.location.href = '/login'
+    navigate('/login', { replace: true })
   }
 
   const getProjectName = (projectId) => {

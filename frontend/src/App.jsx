@@ -18,13 +18,12 @@ function ProtectedRoute({ children, requiredRole }) {
     return <Navigate to="/login" replace />
   }
 
-  if (requiredRole && getUserRole() !== requiredRole) {
-    // If employee tries dashboard, redirect to home
-    if (getUserRole() === 'employee' && requiredRole === 'admin') {
+  const role = getUserRole()
+  if (requiredRole && role !== requiredRole) {
+    if (role === 'employee' && requiredRole === 'admin') {
       return <Navigate to="/home" replace />
     }
-    // Admin can access employee areas
-    return children
+    return <Navigate to="/login" replace />
   }
 
   return children

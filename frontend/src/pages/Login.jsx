@@ -1,13 +1,25 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { loginUser } from '../services/api'
-import { setAuthData } from '../services/auth'
+import { isAuthenticated, getUserRole, setAuthData } from '../services/auth'
 
 export default function Login() {
+  const navigate = useNavigate()
   const [form, setForm] = useState({
     email: '',
     password: '',
   })
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const role = getUserRole()
+      if (role === 'admin') {
+        navigate('/dashboard', { replace: true })
+      } else {
+        navigate('/home', { replace: true })
+      }
+    }
+  }, [navigate])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -19,14 +31,12 @@ export default function Login() {
     try {
       const res = await loginUser(form)
 
-      // save token, user, and role using auth helper
-      setAuthData(res.data.token, res.data.user, res.data.user.role)
+      setAuthData(res.data.token, res.data.user, res.data.role)
 
-      // redirect based on role
-      if (res.data.user.role === 'admin') {
-        window.location.href = '/dashboard'
+      if (res.data.role === 'admin') {
+        navigate('/dashboard', { replace: true })
       } else {
-        window.location.href = '/home'
+        navigate('/home', { replace: true })
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Login failed')

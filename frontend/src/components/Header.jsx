@@ -58,7 +58,7 @@ export default function Header() {
   const handleLogout = () => {
     logout()
     setIsLoggedIn(false)
-    navigate('/login')
+    navigate('/login', { replace: true })
   }
 
   const unreadCount = notifications.length
