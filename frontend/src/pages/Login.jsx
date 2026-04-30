@@ -13,7 +13,7 @@ export default function Login() {
   useEffect(() => {
     if (isAuthenticated()) {
       const role = getUserRole()
-      if (role === 'admin') {
+      if (role === 'admin' || role === 'team_leader') {
         navigate('/dashboard', { replace: true })
       } else {
         navigate('/home', { replace: true })
@@ -33,7 +33,7 @@ export default function Login() {
 
       setAuthData(res.data.token, res.data.user, res.data.role)
 
-      if (res.data.role === 'admin') {
+      if (res.data.role === 'admin' || res.data.role === 'team_leader') {
         navigate('/dashboard', { replace: true })
       } else {
         navigate('/home', { replace: true })

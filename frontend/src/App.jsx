@@ -13,17 +13,14 @@ import Tasks from './pages/Tasks'
 import Projects from './pages/Projects'
 import { isAuthenticated, getUserRole } from './services/auth'
 
-function ProtectedRoute({ children, requiredRole }) {
+function ProtectedRoute({ children, allowedRoles }) {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />
   }
 
   const role = getUserRole()
-  if (requiredRole && role !== requiredRole) {
-    if (role === 'employee' && requiredRole === 'admin') {
-      return <Navigate to="/home" replace />
-    }
-    return <Navigate to="/login" replace />
+  if (allowedRoles && !allowedRoles.includes(role)) {
+    return <Navigate to="/home" replace />
   }
 
   return children
@@ -39,7 +36,7 @@ function App() {
 
       <Routes>
         <Route path="/dashboard" element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute allowedRoles={['admin', 'team_leader']}>
             <Dashboard />
           </ProtectedRoute>
         } />

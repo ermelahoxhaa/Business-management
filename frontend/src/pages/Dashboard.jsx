@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getProjects, getTasks, signupUser } from '../services/api'
-import { logout } from '../services/auth'
+import { logout, getUserRole } from '../services/auth'
 
 const statusLabels = {
   todo: 'To Do',
@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [role, setRole] = useState('')
   const [employeeForm, setEmployeeForm] = useState({
     first_name: '',
     last_name: '',
@@ -36,6 +37,7 @@ export default function Dashboard() {
         const [projectsRes, tasksRes] = await Promise.all([getProjects(), getTasks()])
         setProjects(projectsRes.data || [])
         setTasks(tasksRes.data || [])
+        setRole(getUserRole())
       } catch (err) {
         console.error(err)
         setError(err.response?.data?.message || 'Unable to load dashboard data. Please try again.')
@@ -141,27 +143,53 @@ export default function Dashboard() {
         <aside className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Workspace</p>
-            <h2 className="mt-4 text-2xl font-semibold text-slate-900">Admin Dashboard</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">Quick navigation inside the dashboard area.</p>
+            <h2 className="mt-4 text-2xl font-semibold text-slate-900">
+              {role === 'admin' ? 'Admin Dashboard' : 'Team Leader Dashboard'}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              {role === 'admin' 
+                ? 'Quick navigation inside the dashboard area.' 
+                : 'Manage your team projects and tasks.'
+              }
+            </p>
           </div>
 
           <nav className="space-y-2">
-            {[
-              { label: 'Dashboard Overview', icon: '📊' },
-              { label: 'Project Management', icon: '📁' },
-              { label: 'Task Management', icon: '✅' },
-              { label: 'Employee Management', icon: '👥' },
-              { label: 'Notifications', icon: '🔔' },
-              { label: 'Settings', icon: '⚙️' }
-            ].map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
-              >
-                {item.icon} {item.label}
-              </button>
-            ))}
+            {role === 'admin' ? (
+              [
+                { label: 'Dashboard Overview', icon: '📊' },
+                { label: 'Project Management', icon: '📁' },
+                { label: 'Task Management', icon: '✅' },
+                { label: 'Employee Management', icon: '👥' },
+                { label: 'Notifications', icon: '🔔' },
+                { label: 'Settings', icon: '⚙️' }
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
+                >
+                  {item.icon} {item.label}
+                </button>
+              ))
+            ) : (
+              [
+                { label: 'Dashboard Overview', icon: '📊' },
+                { label: 'Project Management', icon: '📁' },
+                { label: 'Task Management', icon: '✅' },
+                { label: 'Team Overview', icon: '👥' },
+                { label: 'Progress Reports', icon: '📈' },
+                { label: 'Settings', icon: '⚙️' }
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
+                >
+                  {item.icon} {item.label}
+                </button>
+              ))
+            )}
             <button
               onClick={handleLogout}
               className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-800 transition hover:border-red-300 hover:bg-red-100"
@@ -172,21 +200,23 @@ export default function Dashboard() {
         </aside>
 
         <main className="space-y-6">
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-600">Dashboard overview</p>
-                <h1 className="mt-2 text-3xl font-semibold text-slate-900">Business Management Summary</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-                  Monitor active projects, task progress, and overdue work from one place. This page is built for business and task tracking.
-                </p>
-              </div>
-              <div className="rounded-3xl bg-slate-50 p-4 text-center shadow-sm ring-1 ring-slate-200">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Projects</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-900">{totalProjects}</p>
-              </div>
-            </div>
-          </section>
+          {role === 'admin' ? (
+            <>
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-600">Dashboard overview</p>
+                    <h1 className="mt-2 text-3xl font-semibold text-slate-900">Business Management Summary</h1>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                      Monitor active projects, task progress, and overdue work from one place. This page is built for business and task tracking.
+                    </p>
+                  </div>
+                  <div className="rounded-3xl bg-slate-50 p-4 text-center shadow-sm ring-1 ring-slate-200">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Projects</p>
+                    <p className="mt-2 text-3xl font-semibold text-slate-900">{totalProjects}</p>
+                  </div>
+                </div>
+              </section>
 
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -395,6 +425,101 @@ export default function Dashboard() {
                 </Link>
               </div>
             </section>
+          )}
+            </>
+          ) : (
+            <>
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-600">Team Leader Dashboard</p>
+                    <h1 className="mt-2 text-3xl font-semibold text-slate-900">Team Management Overview</h1>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                      Manage your team projects, monitor progress, and coordinate task assignments.
+                    </p>
+                  </div>
+                  <div className="rounded-3xl bg-slate-50 p-4 text-center shadow-sm ring-1 ring-slate-200">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Active Projects</p>
+                    <p className="mt-2 text-3xl font-semibold text-slate-900">{totalProjects}</p>
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="text-sm font-medium text-slate-500">My Projects</p>
+                  <p className="mt-4 text-3xl font-semibold text-slate-900">{totalProjects}</p>
+                </div>
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="text-sm font-medium text-slate-500">Team Tasks</p>
+                  <p className="mt-4 text-3xl font-semibold text-slate-900">{totalTasks}</p>
+                </div>
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="text-sm font-medium text-slate-500">Completed</p>
+                  <p className="mt-4 text-3xl font-semibold text-slate-900">{completedTasks}</p>
+                </div>
+              </section>
+
+              <section className="grid gap-6 xl:grid-cols-2">
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-semibold text-slate-900">Project Management</h2>
+                      <p className="mt-2 text-sm text-slate-500">Create and manage team projects.</p>
+                    </div>
+                    <Link
+                      to="/projects"
+                      className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                    >
+                      Manage Projects
+                    </Link>
+                  </div>
+                  <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
+                    <p className="font-medium text-slate-900">Project Tools</p>
+                    <p className="text-sm leading-6">Create new projects, assign team members, and track milestones.</p>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-semibold text-slate-900">Task Management</h2>
+                      <p className="mt-2 text-sm text-slate-500">Assign and track team tasks.</p>
+                    </div>
+                    <Link
+                      to="/tasks"
+                      className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                    >
+                      Manage Tasks
+                    </Link>
+                  </div>
+                  <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
+                    <p className="font-medium text-slate-900">Task Coordination</p>
+                    <p className="text-sm leading-6">Create tasks, assign to team members, and monitor completion.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid gap-6 xl:grid-cols-2">
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-2xl font-semibold text-slate-900">Team Overview</h2>
+                  <p className="mt-2 text-sm text-slate-500">Employee management and team coordination.</p>
+                  <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
+                    <p className="font-medium text-slate-900">Team Members</p>
+                    <p className="text-sm leading-6">View team members, manage assignments, and track performance.</p>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-2xl font-semibold text-slate-900">Progress Reports</h2>
+                  <p className="mt-2 text-sm text-slate-500">Team and project progress tracking.</p>
+                  <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
+                    <p className="font-medium text-slate-900">Reports</p>
+                    <p className="text-sm leading-6">Generate team reports and monitor project progress.</p>
+                  </div>
+                </div>
+              </section>
+            </>
           )}
         </main>
       </div>
