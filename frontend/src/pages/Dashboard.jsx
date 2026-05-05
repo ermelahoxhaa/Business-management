@@ -158,7 +158,7 @@ export default function Dashboard() {
             {role === 'admin' ? (
               [
                 { label: 'Dashboard Overview', icon: '📊' },
-                { label: 'Project Management', icon: '📁' },
+                { label: 'Project Management', icon: '📁', path: '/projects' },
                 { label: 'Task Management', icon: '✅' },
                 { label: 'Employee Management', icon: '👥' },
                 { label: 'Notifications', icon: '🔔' },
@@ -175,7 +175,7 @@ export default function Dashboard() {
             ) : (
               [
                 { label: 'Dashboard Overview', icon: '📊' },
-                { label: 'Project Management', icon: '📁' },
+                { label: 'Project Management', icon: '📁', path: '/projects' },
                 { label: 'Task Management', icon: '✅' },
                 { label: 'Team Overview', icon: '👥' },
                 { label: 'Progress Reports', icon: '📈' },

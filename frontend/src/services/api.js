@@ -25,6 +25,8 @@ export const deleteTask = (id) => API.delete(`/tasks/${id}`)
 
 export const getProjects = () => API.get('/projects')
 export const createProject = (data) => API.post('/projects', data)
+export const updateProject = (id, data) => API.put(`/projects/${id}`, data)
+export const deleteProject = (id) => API.delete(`/projects/${id}`)
 
 export const getUsers = () => API.get('/auth/users')
 
