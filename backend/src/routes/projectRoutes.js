@@ -6,13 +6,14 @@ import {
   updateProjectController,
   deleteProjectController
 } from '../controllers/projectController.js'
+import { requireAuth, requireRoles } from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
-router.post('/', createProjectController)
-router.get('/', getAllProjectsController)
-router.get('/:id', getProjectByIdController)
-router.put('/:id', updateProjectController)
-router.delete('/:id', deleteProjectController)
+router.get('/', requireAuth, getAllProjectsController)
+router.get('/:id', requireAuth, getProjectByIdController)
+router.post('/', requireAuth, requireRoles(['team_leader']), createProjectController)
+router.put('/:id', requireAuth, requireRoles(['admin', 'team_leader']), updateProjectController)
+router.delete('/:id', requireAuth, requireRoles(['admin']), deleteProjectController)
 
 export default router

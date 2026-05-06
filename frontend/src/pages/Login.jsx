@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { loginUser } from '../services/api'
-import { isAuthenticated, getUserRole, setAuthData } from '../services/auth'
+import { isAuthenticated, getUserRole, setAuthData, getDefaultRouteForRole } from '../services/auth'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -12,12 +12,7 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      const role = getUserRole()
-      if (role === 'admin' || role === 'team_leader') {
-        navigate('/dashboard', { replace: true })
-      } else {
-        navigate('/home', { replace: true })
-      }
+      navigate(getDefaultRouteForRole(getUserRole()), { replace: true })
     }
   }, [navigate])
 
@@ -32,12 +27,7 @@ export default function Login() {
       const res = await loginUser(form)
 
       setAuthData(res.data.token, res.data.user, res.data.role)
-
-      if (res.data.role === 'admin' || res.data.role === 'team_leader') {
-        navigate('/dashboard', { replace: true })
-      } else {
-        navigate('/home', { replace: true })
-      }
+      navigate(getDefaultRouteForRole(res.data.role), { replace: true })
     } catch (err) {
       alert(err.response?.data?.message || 'Login failed')
     }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createTask, deleteTask, getTasks, updateTask, getProjects, getUsers, getComments, createComment } from '../services/api'
+import { getCurrentUser, getUserRole } from '../services/auth'
 
 const statusOptions = [
   { value: 'todo', label: 'To Do' },
@@ -14,6 +15,10 @@ const priorityOptions = [
 ]
 
 export default function Tasks() {
+  const currentUser = getCurrentUser()
+  const userRole = getUserRole()
+  const isAdmin = userRole === 'admin'
+  const isTeamLeader = userRole === 'team_leader'
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -93,7 +98,14 @@ export default function Tasks() {
     setFilters({ ...filters, [e.target.name]: e.target.value })
   }
 
-  const filteredTasks = tasks.filter(task => {
+  const roleBasedTasks = isTeamLeader
+    ? tasks.filter((task) => {
+        const taskProject = projects.find((project) => project.id === task.project_id)
+        return taskProject?.created_by === currentUser?.id
+      })
+    : tasks
+
+  const filteredTasks = roleBasedTasks.filter(task => {
     if (filters.projectId && task.project_id !== Number(filters.projectId)) return false
     if (filters.status && task.status !== filters.status) return false
     if (filters.assignedUser && task.assigned_to !== Number(filters.assignedUser)) return false
@@ -108,7 +120,9 @@ export default function Tasks() {
   const getUserName = (userId) => {
     if (!userId) return '-'
     const user = users.find(u => u.id === userId)
-    return user ? user.name || user.email : `User ${userId}`
+    if (!user) return `User ${userId}`
+    const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ')
+    return fullName || user.email
   }
 
   const loadComments = async (taskId) => {
@@ -128,7 +142,7 @@ export default function Tasks() {
       await createComment({
         task_id: taskId,
         comment: commentText,
-        user_id: 1 // placeholder
+        user_id: currentUser?.id
       })
       setCommentForms(prev => ({ ...prev, [taskId]: '' }))
       loadComments(taskId)
@@ -151,6 +165,7 @@ export default function Tasks() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!isTeamLeader) return
     setSaving(true)
 
     try {
@@ -160,9 +175,9 @@ export default function Tasks() {
         status: form.status,
         priority: form.priority,
         dueDate: form.dueDate,
-        assigned_to: Number(form.assignedUser || 0),
+        assigned_to: Number(form.assignedUser),
         project_id: Number(form.projectId),
-        created_by: 1
+        created_by: currentUser?.id
       }
 
       if (editingId) {
@@ -197,6 +212,7 @@ export default function Tasks() {
   }
 
   const handleDelete = async (id) => {
+    if (!isAdmin) return
     if (!window.confirm('Delete this task?')) return
 
     try {
@@ -231,9 +247,12 @@ export default function Tasks() {
         <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-2xl backdrop-blur-md sm:p-8">
           <h1 className="text-3xl font-semibold text-stone-800">Task Management</h1>
           <p className="mt-2 max-w-2xl text-sm text-stone-600">
-            Create, update, and manage your tasks from a clean, modern workspace.
+            {isTeamLeader
+              ? 'Create, assign, and update tasks for your team projects.'
+              : 'Monitor progress and manage task execution across projects.'}
           </p>
 
+          {isTeamLeader && (
           <form onSubmit={handleSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="mb-2 block text-sm font-medium text-stone-700">Title</label>
@@ -302,13 +321,20 @@ export default function Tasks() {
 
             <div>
               <label className="mb-2 block text-sm font-medium text-stone-700">Assigned User</label>
-              <input
+              <select
                 name="assignedUser"
                 value={form.assignedUser}
                 onChange={handleChange}
-                placeholder="User ID"
+                required
                 className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 placeholder-stone-400 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-              />
+              >
+                <option value="">Select a user</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {getUserName(user.id)}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -346,6 +372,7 @@ export default function Tasks() {
               </button>
             </div>
           </form>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -403,7 +430,7 @@ export default function Tasks() {
                   <option value="">All Users</option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
-                      {user.name || user.email}
+                      {getUserName(user.id)}
                     </option>
                   ))}
                 </select>
@@ -414,7 +441,7 @@ export default function Tasks() {
           <div className="grid gap-4">
             {filteredTasks.length === 0 ? (
               <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 text-stone-600 shadow-xl">
-                No tasks available yet.
+                {isTeamLeader ? 'No tasks found for your projects yet.' : 'No tasks available yet.'}
               </div>
             ) : (
               filteredTasks.map((task) => (
@@ -447,20 +474,24 @@ export default function Tasks() {
                       </select>
                     </div>
                     <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(task)}
-                        className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-stone-100 transition duration-200 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(task.id)}
-                        className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm font-medium text-stone-700 transition duration-200 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
-                      >
-                        Delete
-                      </button>
+                      {(isAdmin || isTeamLeader) && (
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(task)}
+                          className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-stone-100 transition duration-200 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(task.id)}
+                          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm font-medium text-stone-700 transition duration-200 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
+                        >
+                          Delete
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => loadComments(task.id)}

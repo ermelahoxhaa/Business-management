@@ -7,7 +7,11 @@ import {
 
 export const createCommentController = async (req, res) => {
   try {
-    const comment = await createCommentService(req.body)
+    const comment = await createCommentService({
+      ...req.body,
+      user_id: req.user.id,
+      created_by: req.user.id
+    })
     res.status(201).json(comment)
   } catch (err) {
     res.status(400).json({ message: err.message })
@@ -25,7 +29,10 @@ export const getCommentsByTaskController = async (req, res) => {
 
 export const updateCommentController = async (req, res) => {
   try {
-    const result = await updateCommentService(req.params.id, req.body)
+    const result = await updateCommentService(req.params.id, {
+      ...req.body,
+      updated_by: req.user.id
+    })
     res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })

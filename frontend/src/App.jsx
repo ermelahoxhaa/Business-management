@@ -11,7 +11,7 @@ import Dashboard from './pages/Dashboard'
 import ClientManagement from './pages/dashboard/ClientManagement'
 import Tasks from './pages/Tasks'
 import Projects from './pages/Projects'
-import { isAuthenticated, getUserRole } from './services/auth'
+import { isAuthenticated, getUserRole, getDefaultRouteForRole } from './services/auth'
 
 function ProtectedRoute({ children, allowedRoles }) {
   if (!isAuthenticated()) {
@@ -20,7 +20,7 @@ function ProtectedRoute({ children, allowedRoles }) {
 
   const role = getUserRole()
   if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to="/home" replace />
+    return <Navigate to={getDefaultRouteForRole(role)} replace />
   }
 
   return children
@@ -40,15 +40,15 @@ function App() {
             <Dashboard />
           </ProtectedRoute>
         } />
-        <Route path="/home" element={
-          <ProtectedRoute>
-            <Home />
-          </ProtectedRoute>
-        } />
+        <Route path="/home" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/client" element={<ClientManagement />} />
+        <Route path="/client" element={
+          <ProtectedRoute>
+            <ClientManagement />
+          </ProtectedRoute>
+        } />
         <Route path="/tasks" element={
           <ProtectedRoute>
             <Tasks />
@@ -59,7 +59,15 @@ function App() {
             <Projects />
           </ProtectedRoute>
         } />
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route
+          path="/"
+          element={
+            <Navigate
+              to={isAuthenticated() ? getDefaultRouteForRole(getUserRole()) : '/home'}
+              replace
+            />
+          }
+        />
       </Routes>
 
       {!isDashboard && <Footer />}

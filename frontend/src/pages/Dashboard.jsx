@@ -159,35 +159,55 @@ export default function Dashboard() {
               [
                 { label: 'Dashboard Overview', icon: '📊' },
                 { label: 'Project Management', icon: '📁', path: '/projects' },
-                { label: 'Task Management', icon: '✅' },
+                { label: 'Task Management', icon: '✅', path: '/tasks' },
                 { label: 'Employee Management', icon: '👥' },
                 { label: 'Notifications', icon: '🔔' },
                 { label: 'Settings', icon: '⚙️' }
               ].map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
-                >
-                  {item.icon} {item.label}
-                </button>
+                item.path ? (
+                  <Link
+                    key={item.label}
+                    to={item.path}
+                    className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
+                  >
+                    {item.icon} {item.label}
+                  </Link>
+                ) : (
+                  <button
+                    key={item.label}
+                    type="button"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
+                  >
+                    {item.icon} {item.label}
+                  </button>
+                )
               ))
             ) : (
               [
                 { label: 'Dashboard Overview', icon: '📊' },
                 { label: 'Project Management', icon: '📁', path: '/projects' },
-                { label: 'Task Management', icon: '✅' },
+                { label: 'Task Management', icon: '✅', path: '/tasks' },
                 { label: 'Team Overview', icon: '👥' },
                 { label: 'Progress Reports', icon: '📈' },
                 { label: 'Settings', icon: '⚙️' }
               ].map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
-                >
-                  {item.icon} {item.label}
-                </button>
+                item.path ? (
+                  <Link
+                    key={item.label}
+                    to={item.path}
+                    className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
+                  >
+                    {item.icon} {item.label}
+                  </Link>
+                ) : (
+                  <button
+                    key={item.label}
+                    type="button"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
+                  >
+                    {item.icon} {item.label}
+                  </button>
+                )
               ))
             )}
             <button
@@ -458,65 +478,103 @@ export default function Dashboard() {
                   <p className="text-sm font-medium text-slate-500">Completed</p>
                   <p className="mt-4 text-3xl font-semibold text-slate-900">{completedTasks}</p>
                 </div>
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="text-sm font-medium text-slate-500">In Progress</p>
+                  <p className="mt-4 text-3xl font-semibold text-slate-900">{inProgressTasks}</p>
+                </div>
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="text-sm font-medium text-slate-500">Overdue Tasks</p>
+                  <p className="mt-4 text-3xl font-semibold text-slate-900">{overdueTasks}</p>
+                </div>
               </section>
 
-              <section className="grid gap-6 xl:grid-cols-2">
+              <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
                 <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <h2 className="text-2xl font-semibold text-slate-900">Project Management</h2>
-                      <p className="mt-2 text-sm text-slate-500">Create and manage team projects.</p>
-                    </div>
-                    <Link
-                      to="/projects"
-                      className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                    >
-                      Manage Projects
-                    </Link>
-                  </div>
-                  <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
-                    <p className="font-medium text-slate-900">Project Tools</p>
-                    <p className="text-sm leading-6">Create new projects, assign team members, and track milestones.</p>
-                  </div>
-                </div>
-
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <h2 className="text-2xl font-semibold text-slate-900">Task Management</h2>
-                      <p className="mt-2 text-sm text-slate-500">Assign and track team tasks.</p>
+                      <h2 className="text-2xl font-semibold text-slate-900">Recent Tasks</h2>
+                      <p className="mt-2 text-sm text-slate-500">Track the latest activity in your team tasks.</p>
                     </div>
                     <Link
                       to="/tasks"
                       className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                     >
-                      Manage Tasks
+                      View tasks
                     </Link>
                   </div>
-                  <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
-                    <p className="font-medium text-slate-900">Task Coordination</p>
-                    <p className="text-sm leading-6">Create tasks, assign to team members, and monitor completion.</p>
+                  {recentTasks.length === 0 ? (
+                    <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
+                      No recent tasks yet.
+                    </div>
+                  ) : (
+                    <div className="mt-6 space-y-4">
+                      {recentTasks.map((task) => (
+                        <div key={task.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="font-semibold text-slate-900">{task.title || 'Untitled task'}</p>
+                              <p className="text-sm text-slate-500">{getProjectName(task.project_id)}</p>
+                            </div>
+                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${statusClasses[task.status] || 'bg-slate-100 text-slate-800'}`}>
+                              {statusLabels[task.status] || 'Unknown'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-semibold text-slate-900">Project Progress</h2>
+                      <p className="mt-2 text-sm text-slate-500">Completion summary by project.</p>
+                    </div>
+                    <Link
+                      to="/projects"
+                      className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                    >
+                      View projects
+                    </Link>
                   </div>
+                  {sortedProjects.length === 0 ? (
+                    <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
+                      No project progress available yet.
+                    </div>
+                  ) : (
+                    <div className="mt-6 space-y-4">
+                      {sortedProjects.map((project) => (
+                        <div key={project.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="font-semibold text-slate-900">{project.name}</p>
+                              <p className="text-sm text-slate-500">{project.complete}/{project.total} completed</p>
+                            </div>
+                            <span className="text-sm font-semibold text-slate-700">{project.progress}%</span>
+                          </div>
+                          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-200">
+                            <div className="h-2.5 rounded-full bg-slate-900" style={{ width: `${project.progress}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </section>
 
-              <section className="grid gap-6 xl:grid-cols-2">
+              <section className="grid gap-6 xl:grid-cols-3">
                 <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                   <h2 className="text-2xl font-semibold text-slate-900">Team Overview</h2>
-                  <p className="mt-2 text-sm text-slate-500">Employee management and team coordination.</p>
-                  <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
-                    <p className="font-medium text-slate-900">Team Members</p>
-                    <p className="text-sm leading-6">View team members, manage assignments, and track performance.</p>
-                  </div>
+                  <p className="mt-2 text-sm text-slate-500">Placeholder for employee/team insights.</p>
                 </div>
-
                 <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h2 className="text-2xl font-semibold text-slate-900">Progress Reports</h2>
-                  <p className="mt-2 text-sm text-slate-500">Team and project progress tracking.</p>
-                  <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
-                    <p className="font-medium text-slate-900">Reports</p>
-                    <p className="text-sm leading-6">Generate team reports and monitor project progress.</p>
-                  </div>
+                  <h2 className="text-2xl font-semibold text-slate-900">Reports</h2>
+                  <p className="mt-2 text-sm text-slate-500">Placeholder for report generation tools.</p>
+                </div>
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-2xl font-semibold text-slate-900">Settings</h2>
+                  <p className="mt-2 text-sm text-slate-500">Placeholder for team leader settings.</p>
                 </div>
               </section>
             </>

@@ -1,5 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import './Header.css'
 import { isAuthenticated, logout } from '../services/auth'
 
@@ -48,17 +48,12 @@ function NotificationModal({ open, onClose, items }) {
 
 export default function Header() {
   const navigate = useNavigate()
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const isLoggedIn = isAuthenticated()
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
-
-  useEffect(() => {
-    setIsLoggedIn(isAuthenticated())
-  }, [])
 
   const handleLogout = () => {
     logout()
-    setIsLoggedIn(false)
-    navigate('/login', { replace: true })
+    navigate('/home', { replace: true })
   }
 
   const unreadCount = notifications.length
@@ -76,35 +71,28 @@ export default function Header() {
         <Link to="/about" className="hover:text-black transition">
           About Us
         </Link>
-        <Link to="/client" className="hover:text-black transition">
-          Clients
-        </Link>
-        <Link to="/projects" className="hover:text-black transition">
-          Projects
-        </Link>
-        <Link to="/tasks" className="hover:text-black transition">
-          Tasks
-        </Link>
       </nav>
 
         <div className="header__actions">
-          <button
-            type="button"
-            onClick={() => setIsNotificationsOpen(true)}
-            className="header__notify-button"
-            aria-label="Open notifications"
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" className="header__notify-icon" aria-hidden="true">
-              <path d="M12 2a6 6 0 0 0-6 6v4.5L4 14.5v1h16v-1l-2-2V8a6 6 0 0 0-6-6Zm0 18a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 20Zm-4-8V8a4 4 0 1 1 8 0v6H8Z" />
-            </svg>
-            {unreadCount > 0 && (
-              <span className="header__notify-badge">{unreadCount}</span>
-            )}
-          </button>
+          {isLoggedIn && (
+            <button
+              type="button"
+              onClick={() => setIsNotificationsOpen(true)}
+              className="header__notify-button"
+              aria-label="Open notifications"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" className="header__notify-icon" aria-hidden="true">
+                <path d="M12 2a6 6 0 0 0-6 6v4.5L4 14.5v1h16v-1l-2-2V8a6 6 0 0 0-6-6Zm0 18a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 20Zm-4-8V8a4 4 0 1 1 8 0v6H8Z" />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="header__notify-badge">{unreadCount}</span>
+              )}
+            </button>
+          )}
 
           {!isLoggedIn ? (
             <button onClick={() => navigate('/login')} className="header__button">
-              Login / Sign Up
+              Login
             </button>
           ) : (
             <button onClick={handleLogout} className="header__button">

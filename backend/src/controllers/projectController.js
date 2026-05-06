@@ -8,7 +8,10 @@ import {
 
 export const createProjectController = async (req, res) => {
   try {
-    const project = await createProjectService(req.body)
+    const project = await createProjectService({
+      ...req.body,
+      created_by: req.user.id
+    })
     res.status(201).json(project)
   } catch (err) {
     res.status(400).json({ message: err.message })
@@ -35,7 +38,10 @@ export const getProjectByIdController = async (req, res) => {
 
 export const updateProjectController = async (req, res) => {
   try {
-    const result = await updateProjectService(req.params.id, req.body)
+    const result = await updateProjectService(req.params.id, {
+      ...req.body,
+      updated_by: req.user.id
+    })
     res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })

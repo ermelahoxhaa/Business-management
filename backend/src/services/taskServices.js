@@ -11,7 +11,7 @@ import {
 const validStatuses = ['todo', 'in_progress', 'done']
 const validPriorities = ['low', 'medium', 'high']
 
-const normalizeTaskPayload = ({ title, description, status, priority, dueDate, updated_by }) => {
+const normalizeTaskPayload = ({ title, description, status, priority, dueDate, assigned_to, project_id, updated_by }) => {
   const taskData = {}
 
   if (title !== undefined) taskData.title = title
@@ -19,6 +19,8 @@ const normalizeTaskPayload = ({ title, description, status, priority, dueDate, u
   if (status !== undefined) taskData.status = status
   if (priority !== undefined) taskData.priority = priority
   if (dueDate !== undefined) taskData.due_date = dueDate
+  if (assigned_to !== undefined) taskData.assigned_to = assigned_to
+  if (project_id !== undefined) taskData.project_id = project_id
   if (updated_by !== undefined) taskData.updated_by = updated_by
 
   return taskData
@@ -41,7 +43,11 @@ export const createTaskService = async ({ title, description, status, priority, 
     throw new Error('Valid project ID is required')
   }
 
-  if (assigned_to !== undefined && (assigned_to <= 0 || !Number.isInteger(assigned_to))) {
+  if (assigned_to === undefined || assigned_to === null) {
+    throw new Error('Assigned user is required')
+  }
+
+  if (assigned_to !== undefined && assigned_to !== null && (assigned_to <= 0 || !Number.isInteger(assigned_to))) {
     throw new Error('Assigned user ID must be a positive integer if provided')
   }
 
@@ -100,6 +106,10 @@ export const updateTaskService = async (id, payload) => {
 
   if (updates.assigned_to !== undefined && (updates.assigned_to <= 0 || !Number.isInteger(updates.assigned_to))) {
     throw new Error('Assigned user ID must be a positive integer if provided')
+  }
+
+  if (updates.project_id !== undefined && (updates.project_id <= 0 || !Number.isInteger(updates.project_id))) {
+    throw new Error('Valid project ID is required')
   }
 
   await updateTask(id, updates)

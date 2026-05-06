@@ -10,7 +10,10 @@ import {
 
 export const createTaskController = async (req, res) => {
   try {
-    const task = await createTaskService(req.body)
+    const task = await createTaskService({
+      ...req.body,
+      created_by: req.user.id
+    })
     res.status(201).json(task)
   } catch (err) {
     res.status(400).json({ message: err.message })
@@ -55,7 +58,10 @@ export const getTasksByProjectController = async (req, res) => {
 
 export const updateTaskController = async (req, res) => {
   try {
-    const result = await updateTaskService(req.params.id, req.body)
+    const result = await updateTaskService(req.params.id, {
+      ...req.body,
+      updated_by: req.user.id
+    })
     res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })

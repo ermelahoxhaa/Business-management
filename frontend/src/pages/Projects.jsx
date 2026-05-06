@@ -146,7 +146,7 @@ export default function Projects() {
     if (user && user.first_name) {
       return user.first_name
     }
-    return 'Unknown user'
+    return userId ? `User #${userId}` : 'Unknown user'
   }
 
   const handleSubmit = async (e) => {
@@ -157,7 +157,7 @@ export default function Projects() {
       await createProject({
         name: form.name,
         description: form.description,
-        created_by: currentUser?.id || 1
+        created_by: currentUser?.id
       })
       alert('Project created successfully')
       resetForm()
@@ -254,7 +254,7 @@ export default function Projects() {
                       <div>
                         <h3 className="text-xl font-semibold text-stone-800">{project.name}</h3>
                         <p className="text-sm text-stone-600">{project.description}</p>
-                        {isAdmin && project.created_by && (
+                        {project.created_by && (
                           <p className="text-xs text-stone-500 mt-1">
                             Created by: {getUserName(project.created_by)}
                           </p>

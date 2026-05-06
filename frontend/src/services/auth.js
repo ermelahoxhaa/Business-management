@@ -17,6 +17,10 @@ export const getUserRole = () => {
   return Cookies.get(ROLE_KEY)
 }
 
+export const getDefaultRouteForRole = (role) => {
+  return role === 'admin' || role === 'team_leader' ? '/dashboard' : '/home'
+}
+
 export const setAuthData = (token, user, role) => {
   Cookies.set(TOKEN_KEY, token, { expires: 1 }) // 1 day
   Cookies.set(USER_KEY, JSON.stringify(user), { expires: 1 })
