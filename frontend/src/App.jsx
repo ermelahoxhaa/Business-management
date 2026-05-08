@@ -8,6 +8,7 @@ import About from './pages/About'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
+import EmployeeManagement from './pages/EmployeeManagement'
 import ClientManagement from './pages/dashboard/ClientManagement'
 import Tasks from './pages/Tasks'
 import Projects from './pages/Projects'
@@ -47,6 +48,11 @@ function App() {
         <Route path="/client" element={
           <ProtectedRoute>
             <ClientManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/employees" element={
+          <ProtectedRoute allowedRoles={['admin', 'team_leader']}>
+            <EmployeeManagement />
           </ProtectedRoute>
         } />
         <Route path="/tasks" element={

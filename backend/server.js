@@ -6,6 +6,8 @@ import connectMongo from './src/config/mongo.js'
 import User from './src/models/User.js'
 import Role from './src/models/Role.js'
 import UserRole from './src/models/UserRole.js'
+import Department from './src/models/Department.js'
+import Employee from './src/models/Employee.js'
 import bcrypt from 'bcrypt'
 
 dotenv.config()

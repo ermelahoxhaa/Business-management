@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { getProjects, getTasks, signupUser } from '../services/api'
+import { getProjects, getTasks } from '../services/api'
 import { logout, getUserRole } from '../services/auth'
 
 const statusLabels = {
@@ -22,14 +22,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [role, setRole] = useState('')
-  const [employeeForm, setEmployeeForm] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    password: '',
-    role: 'employee',
-    department: ''
-  })
 
   useEffect(() => {
     const loadData = async () => {
@@ -82,28 +74,6 @@ export default function Dashboard() {
       return bDate - aDate
     })
     .slice(0, 5)
-
-  const handleEmployeeChange = (e) => {
-    setEmployeeForm({ ...employeeForm, [e.target.name]: e.target.value })
-  }
-
-  const handleAddEmployee = async (e) => {
-    e.preventDefault()
-    try {
-      await signupUser(employeeForm)
-      alert('Employee added successfully!')
-      setEmployeeForm({
-        first_name: '',
-        last_name: '',
-        email: '',
-        password: '',
-        role: 'employee',
-        department: ''
-      })
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add employee')
-    }
-  }
 
   const handleLogout = () => {
     logout()
@@ -160,7 +130,7 @@ export default function Dashboard() {
                 { label: 'Dashboard Overview', icon: '📊' },
                 { label: 'Project Management', icon: '📁', path: '/projects' },
                 { label: 'Task Management', icon: '✅', path: '/tasks' },
-                { label: 'Employee Management', icon: '👥' },
+                { label: 'Employee Management', icon: '👥', path: '/employees' },
                 { label: 'Notifications', icon: '🔔' },
                 { label: 'Settings', icon: '⚙️' }
               ].map((item) => (
@@ -187,7 +157,7 @@ export default function Dashboard() {
                 { label: 'Dashboard Overview', icon: '📊' },
                 { label: 'Project Management', icon: '📁', path: '/projects' },
                 { label: 'Task Management', icon: '✅', path: '/tasks' },
-                { label: 'Team Overview', icon: '👥' },
+                { label: 'Employee Management', icon: '👥', path: '/employees' },
                 { label: 'Progress Reports', icon: '📈' },
                 { label: 'Settings', icon: '⚙️' }
               ].map((item) => (
@@ -357,70 +327,13 @@ export default function Dashboard() {
 
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-2xl font-semibold text-slate-900">Employee Management</h2>
-              <p className="mt-2 text-sm text-slate-500">Add new employees to the system.</p>
-
-              <form onSubmit={handleAddEmployee} className="mt-6 space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <input
-                    type="text"
-                    name="first_name"
-                    placeholder="First Name"
-                    value={employeeForm.first_name}
-                    onChange={handleEmployeeChange}
-                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 placeholder-slate-400 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
-                    required
-                  />
-                  <input
-                    type="text"
-                    name="last_name"
-                    placeholder="Last Name"
-                    value={employeeForm.last_name}
-                    onChange={handleEmployeeChange}
-                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 placeholder-slate-400 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
-                    required
-                  />
-                </div>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Email"
-                  value={employeeForm.email}
-                  onChange={handleEmployeeChange}
-                  className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 placeholder-slate-400 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
-                  required
-                />
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Password"
-                  value={employeeForm.password}
-                  onChange={handleEmployeeChange}
-                  className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 placeholder-slate-400 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
-                  required
-                />
-                <select
-                  name="role"
-                  value={employeeForm.role}
-                  onChange={handleEmployeeChange}
-                  className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
-                >
-                  <option value="employee">Employee</option>
-                </select>
-                <input
-                  type="text"
-                  name="department"
-                  placeholder="Department (optional)"
-                  value={employeeForm.department}
-                  onChange={handleEmployeeChange}
-                  className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 placeholder-slate-400 transition focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
-                />
-                <button
-                  type="submit"
-                  className="w-full rounded-full bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
-                >
-                  Add Employee
-                </button>
-              </form>
+              <p className="mt-2 text-sm text-slate-500">Manage your team members and departments from one place.</p>
+              <Link
+                to="/employees"
+                className="mt-6 inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+              >
+                Open Employee Management
+              </Link>
             </div>
           </section>
 

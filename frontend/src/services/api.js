@@ -32,3 +32,11 @@ export const getUsers = () => API.get('/auth/users')
 
 export const getComments = (taskId) => API.get(`/comments/task/${taskId}`)
 export const createComment = (data) => API.post('/comments', data)
+
+export const getDepartments = () => API.get('/departments')
+export const createDepartment = (data) => API.post('/departments', data)
+
+export const getEmployees = (params) => API.get('/employees', { params })
+export const createEmployee = (data) => API.post('/employees', data)
+export const updateEmployee = (id, data) => API.put(`/employees/${id}`, data)
+export const updateEmployeeStatus = (id, status) => API.patch(`/employees/${id}/status`, { status })
