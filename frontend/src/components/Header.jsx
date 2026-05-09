@@ -1,7 +1,7 @@
 import { useNavigate, Link } from 'react-router-dom'
 import { useState } from 'react'
 import './Header.css'
-import { isAuthenticated, logout } from '../services/auth'
+import { getUserRole, isAuthenticated, logout } from '../services/auth'
 
 const notifications = [
   { id: 1, label: 'New project request submitted.', time: '2m ago' },
@@ -49,6 +49,7 @@ function NotificationModal({ open, onClose, items }) {
 export default function Header() {
   const navigate = useNavigate()
   const isLoggedIn = isAuthenticated()
+  const userRole = getUserRole()
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
 
   const handleLogout = () => {
@@ -65,7 +66,7 @@ export default function Header() {
 
       
       <nav className="flex gap-6 text-gray-600">
-        <Link to="/home" className="hover:text-black transition">
+        <Link to={isLoggedIn && userRole === 'employee' ? '/home' : '/'} className="hover:text-black transition">
           Home
         </Link>
         <Link to="/about" className="hover:text-black transition">

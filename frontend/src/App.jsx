@@ -4,6 +4,7 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 
 import Home from './pages/Home'
+import EmployeeHome from './pages/EmployeeHome'
 import About from './pages/About'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -41,12 +42,16 @@ function App() {
             <Dashboard />
           </ProtectedRoute>
         } />
-        <Route path="/home" element={<Home />} />
+        <Route path="/home" element={
+          <ProtectedRoute allowedRoles={['employee']}>
+            <EmployeeHome />
+          </ProtectedRoute>
+        } />
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/client" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'team_leader']}>
             <ClientManagement />
           </ProtectedRoute>
         } />
@@ -56,22 +61,21 @@ function App() {
           </ProtectedRoute>
         } />
         <Route path="/tasks" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'team_leader']}>
             <Tasks />
           </ProtectedRoute>
         } />
         <Route path="/projects" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'team_leader']}>
             <Projects />
           </ProtectedRoute>
         } />
         <Route
           path="/"
           element={
-            <Navigate
-              to={isAuthenticated() ? getDefaultRouteForRole(getUserRole()) : '/home'}
-              replace
-            />
+            isAuthenticated()
+              ? <Navigate to={getDefaultRouteForRole(getUserRole())} replace />
+              : <Home />
           }
         />
       </Routes>
