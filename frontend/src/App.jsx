@@ -13,6 +13,7 @@ import EmployeeManagement from './pages/EmployeeManagement'
 import ClientManagement from './pages/dashboard/ClientManagement'
 import Tasks from './pages/Tasks'
 import Projects from './pages/Projects'
+import Settings from './pages/Settings'
 import { isAuthenticated, getUserRole, getDefaultRouteForRole } from './services/auth'
 
 function ProtectedRoute({ children, allowedRoles }) {
@@ -30,7 +31,11 @@ function ProtectedRoute({ children, allowedRoles }) {
 
 function App() {
   const location = useLocation()
-  const isDashboard = location.pathname.startsWith('/dashboard')
+  const role = getUserRole()
+  const isDashboardUser = role === 'admin' || role === 'team_leader'
+  const isDashboard = location.pathname.startsWith('/dashboard') || (
+    isDashboardUser && ['/client', '/employees', '/tasks', '/projects', '/settings'].includes(location.pathname)
+  )
 
   return (
     <>
@@ -68,6 +73,11 @@ function App() {
         <Route path="/projects" element={
           <ProtectedRoute allowedRoles={['admin', 'team_leader']}>
             <Projects />
+          </ProtectedRoute>
+        } />
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         } />
         <Route

@@ -76,19 +76,33 @@ export default function Header() {
 
         <div className="header__actions">
           {isLoggedIn && (
-            <button
-              type="button"
-              onClick={() => setIsNotificationsOpen(true)}
-              className="header__notify-button"
-              aria-label="Open notifications"
-            >
-              <svg viewBox="0 0 24 24" width="20" height="20" className="header__notify-icon" aria-hidden="true">
-                <path d="M12 2a6 6 0 0 0-6 6v4.5L4 14.5v1h16v-1l-2-2V8a6 6 0 0 0-6-6Zm0 18a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 20Zm-4-8V8a4 4 0 1 1 8 0v6H8Z" />
-              </svg>
-              {unreadCount > 0 && (
-                <span className="header__notify-badge">{unreadCount}</span>
+            <>
+              {userRole === 'employee' && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/settings')}
+                  className="header__notify-button"
+                  aria-label="Open settings"
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20" className="header__notify-icon" aria-hidden="true">
+                    <path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.02-.66-.07-.98l2.11-1.65-2-3.46-2.49 1a7.3 7.3 0 0 0-1.69-.98L15 3.25h-4l-.36 2.68c-.6.24-1.17.57-1.69.98l-2.49-1-2 3.46 2.11 1.65c-.04.32-.07.65-.07.98s.02.66.07.98l-2.11 1.65 2 3.46 2.49-1c.52.41 1.09.74 1.69.98l.36 2.68h4l.36-2.68c.6-.24 1.17-.57 1.69-.98l2.49 1 2-3.46-2.11-1.65ZM13 15.5A3.5 3.5 0 1 1 13 8a3.5 3.5 0 0 1 0 7.5Z" />
+                  </svg>
+                </button>
               )}
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsNotificationsOpen(true)}
+                className="header__notify-button"
+                aria-label="Open notifications"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" className="header__notify-icon" aria-hidden="true">
+                  <path d="M12 2a6 6 0 0 0-6 6v4.5L4 14.5v1h16v-1l-2-2V8a6 6 0 0 0-6-6Zm0 18a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 20Zm-4-8V8a4 4 0 1 1 8 0v6H8Z" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="header__notify-badge">{unreadCount}</span>
+                )}
+              </button>
+            </>
           )}
 
           {!isLoggedIn ? (

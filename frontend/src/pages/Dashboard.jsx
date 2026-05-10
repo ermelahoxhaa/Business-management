@@ -132,7 +132,7 @@ export default function Dashboard() {
                 { label: 'Task Management', icon: '✅', path: '/tasks' },
                 { label: 'Employee Management', icon: '👥', path: '/employees' },
                 { label: 'Notifications', icon: '🔔' },
-                { label: 'Settings', icon: '⚙️' }
+                { label: 'Settings', icon: '⚙️', path: '/settings' }
               ].map((item) => (
                 item.path ? (
                   <Link
@@ -159,7 +159,7 @@ export default function Dashboard() {
                 { label: 'Task Management', icon: '✅', path: '/tasks' },
                 { label: 'Employee Management', icon: '👥', path: '/employees' },
                 { label: 'Progress Reports', icon: '📈' },
-                { label: 'Settings', icon: '⚙️' }
+                { label: 'Settings', icon: '⚙️', path: '/settings' }
               ].map((item) => (
                 item.path ? (
                   <Link
