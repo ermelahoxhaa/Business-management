@@ -14,6 +14,18 @@ const priorityLabels = {
   high: 'High'
 }
 
+const statusStyles = {
+  todo: 'bg-amber-100 text-amber-700',
+  in_progress: 'bg-sky-100 text-sky-700',
+  done: 'bg-emerald-100 text-emerald-700'
+}
+
+const priorityStyles = {
+  low: 'bg-emerald-100 text-emerald-700',
+  medium: 'bg-amber-100 text-amber-700',
+  high: 'bg-rose-100 text-rose-700'
+}
+
 const isOverdue = (task) => {
   if (!task.due_date || task.status === 'done') return false
 
@@ -33,6 +45,7 @@ export default function EmployeeHome() {
   const [loading, setLoading] = useState(true)
   const [feedback, setFeedback] = useState('')
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
+  const [taskFilter, setTaskFilter] = useState('all')
 
   const loadEmployeeData = async () => {
     setLoading(true)
@@ -58,6 +71,11 @@ export default function EmployeeHome() {
   const employeeTasks = useMemo(() => {
     return tasks.filter((task) => Number(task.assigned_to) === Number(currentUser?.id))
   }, [tasks, currentUser?.id])
+
+  const filteredTasks = useMemo(() => {
+    if (taskFilter === 'all') return employeeTasks
+    return employeeTasks.filter((task) => task.status === taskFilter)
+  }, [employeeTasks, taskFilter])
 
   const projectById = useMemo(() => {
     return projects.reduce((map, project) => {
@@ -123,131 +141,183 @@ export default function EmployeeHome() {
 
   if (loading) {
     return (
-      <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-stone-700 via-neutral-700 to-zinc-800 px-4 py-10 sm:px-6">
-        <div className="text-stone-100">Loading your work...</div>
+      <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 px-4 py-10 sm:px-6">
+        <div className="text-white">Loading your work...</div>
       </div>
     )
   }
 
   return (
-    <div className="relative flex min-h-dvh items-start justify-center overflow-hidden bg-gradient-to-br from-stone-700 via-neutral-700 to-zinc-800 px-4 py-10 sm:px-6">
-      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-stone-200/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-8 h-64 w-64 rounded-full bg-zinc-200/20 blur-3xl" />
+    <div className="relative flex min-h-dvh items-start justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 px-4 py-10 sm:px-6">
+      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute -right-20 bottom-8 h-64 w-64 rounded-full bg-sky-400/10 blur-3xl" />
 
-      <div className="relative z-10 w-full max-w-6xl space-y-8">
-        <section className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-2xl backdrop-blur-md sm:p-8">
-          <p className="text-sm font-medium uppercase tracking-wide text-stone-500">Employee</p>
-          <h1 className="mt-2 text-3xl font-semibold text-stone-800">Welcome, {fullName}</h1>
-          <p className="mt-2 max-w-2xl text-sm text-stone-600">
-            Here you can view your assigned tasks and related projects.
-          </p>
-        </section>
-
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ['Assigned Tasks', summary.assigned],
-            ['Completed Tasks', summary.completed],
-            ['In Progress Tasks', summary.inProgress],
-            ['Overdue Tasks', summary.overdue]
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-5 shadow-xl">
-              <p className="text-sm text-stone-500">{label}</p>
-              <p className="mt-3 text-3xl font-semibold text-stone-800">{value}</p>
+      <div className="relative z-10 w-full max-w-7xl space-y-8">
+        <section className="rounded-[2rem] border border-white/10 bg-slate-950/90 p-8 shadow-2xl backdrop-blur-xl">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">Employee dashboard</p>
+              <h1 className="mt-4 text-4xl font-semibold text-white">Good to see you, {fullName}</h1>
+              <p className="mt-3 max-w-2xl text-sm text-slate-300">
+                Your personal workspace for tasks, projects and progress tracking.
+              </p>
             </div>
-          ))}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-3xl bg-white/5 p-4 text-sm text-slate-200 ring-1 ring-white/10">
+                <p className="text-slate-400">Current role</p>
+                <p className="mt-2 text-xl font-semibold text-white">Employee</p>
+              </div>
+              <div className="rounded-3xl bg-white/5 p-4 text-sm text-slate-200 ring-1 ring-white/10">
+                <p className="text-slate-400">Next review</p>
+                <p className="mt-2 text-xl font-semibold text-white">In 2 weeks</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              ['Assigned', summary.assigned, 'bg-sky-500/10 text-sky-300'],
+              ['Completed', summary.completed, 'bg-emerald-500/10 text-emerald-300'],
+              ['In Progress', summary.inProgress, 'bg-amber-500/10 text-amber-300'],
+              ['Overdue', summary.overdue, 'bg-rose-500/10 text-rose-300']
+            ].map(([label, value, style]) => (
+              <div key={label} className={`rounded-3xl p-5 ring-1 ring-white/10 ${style}`}>
+                <p className="text-sm uppercase tracking-[0.18em] text-slate-300">{label}</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         {feedback && (
-          <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-4 text-sm text-stone-700 shadow-xl">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200 shadow-xl">
             {feedback}
           </div>
         )}
 
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-stone-100">My Tasks</h2>
-
-          {employeeTasks.length === 0 ? (
-            <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 text-stone-600 shadow-xl">
-              No tasks assigned yet.
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {employeeTasks.map((task) => (
-                <article key={task.id} className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-xl">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <h3 className="text-xl font-semibold text-stone-800">{task.title}</h3>
-                      <p className="mt-1 text-sm text-stone-600">{task.description || 'No description provided.'}</p>
-                    </div>
-
-                    <select
-                      value={task.status}
-                      disabled={updatingTaskId === task.id}
-                      onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                      className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-sm text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20 disabled:opacity-60 sm:w-44"
+        <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+          <div className="space-y-6">
+            <div className="rounded-[2rem] bg-white/95 p-6 shadow-xl ring-1 ring-slate-200/10">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-slate-900">My Tasks</h2>
+                  <p className="mt-2 text-sm text-slate-500">Filter tasks by status and update progress quickly.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {['all', 'todo', 'in_progress', 'done'].map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => setTaskFilter(status)}
+                      className={`rounded-full border px-4 py-2 text-sm transition ${taskFilter === status ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-900'}`}
                     >
-                      {statusOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2 text-sm">
-                    <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Project: {getProjectName(task.project_id)}</span>
-                    <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Status: {statusOptions.find((status) => status.value === task.status)?.label || task.status}</span>
-                    <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Priority: {priorityLabels[task.priority] || task.priority}</span>
-                    <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Due: {task.due_date ? task.due_date.slice(0, 10) : 'No due date'}</span>
-                  </div>
-                </article>
-              ))}
+                      {status === 'all' ? 'All' : statusOptions.find((item) => item.value === status)?.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-          )}
-        </section>
 
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-stone-100">My Projects</h2>
+            {filteredTasks.length === 0 ? (
+              <div className="rounded-[2rem] bg-white/95 p-8 text-center text-slate-600 shadow-xl ring-1 ring-slate-200/10">
+                No tasks match this filter.
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {filteredTasks.map((task) => (
+                  <article key={task.id} className="overflow-hidden rounded-[2rem] bg-white/95 p-6 shadow-xl ring-1 ring-slate-200/10">
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0">
+                        <h3 className="text-xl font-semibold text-slate-900">{task.title}</h3>
+                        <p className="mt-2 text-sm leading-6 text-slate-500">{task.description || 'No description provided.'}</p>
 
-          {employeeProjects.length === 0 ? (
-            <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 text-stone-600 shadow-xl">
-              No projects assigned yet.
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {employeeProjects.map(({ project, projectId, total, completed, progress }) => (
-                <article key={projectId} className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-xl">
-                  <h3 className="text-xl font-semibold text-stone-800">{project?.name || 'Unknown Project'}</h3>
-                  <p className="mt-1 text-sm text-stone-600">{project?.description || 'No description provided.'}</p>
+                        <div className="mt-4 flex flex-wrap gap-2 text-sm">
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">Project: {getProjectName(task.project_id)}</span>
+                          <span className={`rounded-full px-3 py-1 text-sm ${statusStyles[task.status] || 'bg-slate-100 text-slate-700'}`}>
+                            {statusOptions.find((option) => option.value === task.status)?.label || task.status}
+                          </span>
+                          <span className={`rounded-full px-3 py-1 text-sm ${priorityStyles[task.priority] || 'bg-slate-100 text-slate-700'}`}>
+                            {priorityLabels[task.priority] || task.priority}
+                          </span>
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
+                            Due: {task.due_date ? task.due_date.slice(0, 10) : 'No due date'}
+                          </span>
+                        </div>
+                      </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2 text-sm">
-                    <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">My Tasks: {total}</span>
-                    <span className="rounded-full bg-green-200 px-3 py-1 text-green-700">Completed: {completed}</span>
-                    <span className="rounded-full bg-zinc-200 px-3 py-1 text-zinc-700">Progress: {progress}%</span>
-                  </div>
-
-                  <div className="mt-4 h-2 w-full rounded-full bg-stone-200">
-                    <div
-                      className="h-2 rounded-full bg-zinc-600 transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-xl">
-          <h2 className="text-xl font-semibold text-stone-800">Notifications</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm text-stone-700">
-              New task assigned
-            </div>
-            <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm text-stone-700">
-              Project deadline approaching
-            </div>
+                      <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
+                        <select
+                          value={task.status}
+                          disabled={updatingTaskId === task.id}
+                          onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                          className="w-full max-w-xs rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-60"
+                        >
+                          {statusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-slate-500">Update task status instantly.</p>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
+
+          <aside className="space-y-6">
+            <div className="rounded-[2rem] bg-white/95 p-6 shadow-xl ring-1 ring-slate-200/10">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-semibold text-slate-900">Project health</h2>
+                  <p className="mt-2 text-sm text-slate-500">Overview of your active projects and their completion status.</p>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                {employeeProjects.length === 0 ? (
+                  <div className="rounded-3xl bg-slate-50 p-5 text-sm text-slate-600">No project data available yet.</div>
+                ) : (
+                  employeeProjects.map(({ project, projectId, total, completed, progress }) => (
+                    <div key={projectId} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-base font-semibold text-slate-900">{project?.name || 'Unknown Project'}</h3>
+                          <p className="mt-1 text-sm text-slate-500">{project?.description || 'No description available.'}</p>
+                        </div>
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">{progress}%</span>
+                      </div>
+
+                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                        <div className="h-2 rounded-full bg-slate-900" style={{ width: `${progress}%` }} />
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-600">
+                        <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">{total} task{total === 1 ? '' : 's'}</span>
+                        <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">{completed} complete</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] bg-white/95 p-6 shadow-xl ring-1 ring-slate-200/10">
+              <h2 className="text-2xl font-semibold text-slate-900">Updates</h2>
+              <div className="mt-5 space-y-4">
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-medium text-slate-900">No overdue items</p>
+                  <p className="mt-2 text-sm text-slate-500">All of your tasks are currently within their deadlines.</p>
+                </div>
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-medium text-slate-900">Keep momentum</p>
+                  <p className="mt-2 text-sm text-slate-500">Update task statuses as you complete work to keep your progress up to date.</p>
+                </div>
+              </div>
+            </div>
+          </aside>
         </section>
       </div>
     </div>
