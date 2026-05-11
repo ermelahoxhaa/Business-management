@@ -170,153 +170,202 @@ export default function Projects() {
     }
   }
 
+  const totalProjects = projects.length
+  const totalTasks = tasks.length
+  const completedTasks = tasks.filter((task) => task.status === 'done').length
+  const inProgressTasks = tasks.filter((task) => task.status === 'in_progress').length
+  const overdueTasks = tasks.filter((task) => {
+    if (!task.due_date) return false
+    const dueDate = new Date(task.due_date)
+    const now = new Date()
+    return dueDate < now && task.status !== 'done'
+  }).length
+
   if (loading) {
     return (
-      <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-stone-700 via-neutral-700 to-zinc-800 px-4 py-10 sm:px-6">
-        <div className="text-stone-100">Loading...</div>
+      <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 py-10 sm:px-6">
+        <div className="text-white text-lg font-medium">Loading projects...</div>
       </div>
     )
   }
 
   return (
-    <div className="relative flex min-h-dvh items-start justify-center overflow-hidden bg-gradient-to-br from-stone-700 via-neutral-700 to-zinc-800 px-4 py-10 sm:px-6">
-      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-stone-200/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-8 h-64 w-64 rounded-full bg-zinc-200/20 blur-3xl" />
+    <div className="relative min-h-dvh overflow-hidden bg-slate-950 px-4 py-10 sm:px-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-sky-500/20 to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute right-0 bottom-0 h-72 w-72 rounded-full bg-slate-700/30 blur-3xl" />
 
-      <div className="relative z-10 w-full max-w-6xl space-y-8">
-        <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-2xl backdrop-blur-md sm:p-8">
-          <h1 className="text-3xl font-semibold text-stone-800">Project Overview</h1>
-          <p className="mt-2 max-w-2xl text-sm text-stone-600">
-            View project progress and task statistics.
-          </p>
-        </div>
+      <div className="relative z-10 mx-auto max-w-7xl space-y-8">
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl backdrop-blur-xl">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">Project Workspace</p>
+              <h1 className="mt-4 text-4xl font-semibold text-white">Manage your projects</h1>
+              <p className="mt-3 max-w-2xl text-sm text-slate-300">
+                Overview of project progress, tasks, and team ownership all in one place.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-3xl bg-white/5 p-5 text-sm text-slate-200 ring-1 ring-white/10">
+                <p className="text-slate-400">Total projects</p>
+                <p className="mt-2 text-3xl font-semibold text-white">{totalProjects}</p>
+              </div>
+              <div className="rounded-3xl bg-white/5 p-5 text-sm text-slate-200 ring-1 ring-white/10">
+                <p className="text-slate-400">Total tasks</p>
+                <p className="mt-2 text-3xl font-semibold text-white">{totalTasks}</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        {isTeamLeader && (
-        <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-2xl backdrop-blur-md sm:p-8">
-          <h2 className="text-2xl font-semibold text-stone-800 mb-4">Create New Project</h2>
-          <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-stone-700">Project Name</label>
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                required
-                placeholder="Enter project name"
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 placeholder-stone-400 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-              />
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[
+            { label: 'Completed tasks', value: completedTasks, icon: '✔️', style: 'from-emerald-500/10 to-emerald-400/10' },
+            { label: 'In progress', value: inProgressTasks, icon: '⏳', style: 'from-amber-500/10 to-amber-400/10' },
+            { label: 'Overdue', value: overdueTasks, icon: '⚠️', style: 'from-rose-500/10 to-rose-400/10' }
+          ].map((item) => (
+            <div key={item.label} className="rounded-3xl bg-slate-900/90 p-6 shadow-xl ring-1 ring-white/5">
+              <div className={`inline-flex rounded-3xl bg-gradient-to-r ${item.style} px-3 py-2 text-sm font-semibold text-slate-900`}>{item.icon}</div>
+              <p className="mt-5 text-sm text-slate-400">{item.label}</p>
+              <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
+            </div>
+          ))}
+        </section>
+
+        {(isAdmin || isTeamLeader) && (
+          <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold text-white">Create new project</h2>
+                <p className="mt-2 text-sm text-slate-400">Add a new project for your team to work on.</p>
+              </div>
             </div>
 
-            <div className="sm:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-stone-700">Description</label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                rows="4"
-                placeholder="Enter project description"
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 placeholder-stone-400 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-              />
-            </div>
+            <form onSubmit={handleSubmit} className="mt-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-300">Project Name</label>
+                  <input
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
+                    placeholder="Enter project name"
+                    className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-300">Description</label>
+                  <textarea
+                    name="description"
+                    value={form.description}
+                    onChange={handleChange}
+                    rows="4"
+                    placeholder="Describe the project"
+                    className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                  />
+                </div>
+              </div>
 
-            <div className="sm:col-span-2 flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full rounded-lg bg-zinc-800 py-2.5 text-sm font-medium text-stone-100 transition duration-200 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-300/40 disabled:opacity-50 sm:w-auto"
-              >
-                {saving ? 'Creating...' : 'Create Project'}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 py-2.5 text-sm font-medium text-stone-700 transition duration-200 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-zinc-300/40 sm:w-auto"
-              >
-                Reset
-              </button>
-            </div>
-          </form>
-        </div>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-3xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-50"
+                >
+                  {saving ? 'Creating...' : 'Create Project'}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="rounded-3xl border border-slate-700 bg-slate-950/70 px-5 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-500"
+                >
+                  Reset
+                </button>
+              </div>
+            </form>
+          </section>
         )}
 
-        <div className="grid gap-4">
+
+        <section className="grid gap-6">
           {projects.length === 0 ? (
-            <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 text-stone-600 shadow-xl">
+            <div className="rounded-[2rem] border border-dashed border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400 shadow-xl">
               No projects available yet.
             </div>
           ) : (
-            projects.map((project) => {
-              const stats = getProjectStats(project.id)
-              return (
-                <div key={project.id} className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-xl">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-stone-800">{project.name}</h3>
-                        <p className="text-sm text-stone-600">{project.description}</p>
+            <div className="grid gap-6 xl:grid-cols-2">
+              {projects.map((project) => {
+                const stats = getProjectStats(project.id)
+                return (
+                  <div key={project.id} className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0">
+                        <h3 className="text-2xl font-semibold text-white">{project.name}</h3>
+                        <p className="mt-2 text-sm leading-6 text-slate-400">{project.description || 'No project description provided.'}</p>
                         {project.created_by && (
-                          <p className="text-xs text-stone-500 mt-1">
-                            Created by: {getUserName(project.created_by)}
-                          </p>
+                          <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-500">Created by {getUserName(project.created_by)}</p>
                         )}
                       </div>
-                      <div className="flex flex-wrap gap-2 text-sm">
-                        <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Total Tasks: {stats.total}</span>
-                        <span className="rounded-full bg-green-200 px-3 py-1 text-green-700">Completed: {stats.completed}</span>
-                        <span className="rounded-full bg-blue-200 px-3 py-1 text-blue-700">In Progress: {stats.inProgress}</span>
-                        <span className="rounded-full bg-red-200 px-3 py-1 text-red-700">Overdue: {stats.overdue}</span>
-                        <span className="rounded-full bg-zinc-200 px-3 py-1 text-zinc-700">Progress: {stats.progress}%</span>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full bg-slate-800 px-3 py-2 text-sm text-slate-200">Tasks {stats.total}</span>
+                        <span className="rounded-full bg-emerald-800/60 px-3 py-2 text-sm text-emerald-100">Done {stats.completed}</span>
+                        <span className="rounded-full bg-amber-800/60 px-3 py-2 text-sm text-amber-100">In progress {stats.inProgress}</span>
+                        <span className="rounded-full bg-rose-800/60 px-3 py-2 text-sm text-rose-100">Overdue {stats.overdue}</span>
                       </div>
                     </div>
-                    <div className="w-full bg-stone-200 rounded-full h-2">
-                      <div
-                        className="bg-zinc-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${stats.progress}%` }}
-                      ></div>
+
+                    <div className="mt-6 space-y-4">
+                      <div className="w-full overflow-hidden rounded-full bg-slate-800/80 h-3">
+                        <div className="h-3 rounded-full bg-sky-400 transition-all duration-300" style={{ width: `${stats.progress}%` }} />
+                      </div>
+                      <p className="text-sm text-slate-400">Progress: {stats.progress}%</p>
                     </div>
-                    <div className="flex flex-wrap gap-2 pt-2">
+
+                    <div className="mt-6 grid gap-3 sm:grid-cols-2">
                       {editingId === project.id ? (
                         <>
-                          <input
-                            name="name"
-                            value={editForm.name}
-                            onChange={handleEditChange}
-                            placeholder="Project name"
-                            className="flex-1 min-w-[200px] rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-800 placeholder-stone-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-                          />
-                          <textarea
-                            name="description"
-                            value={editForm.description}
-                            onChange={handleEditChange}
-                            placeholder="Project description"
-                            rows="2"
-                            className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-800 placeholder-stone-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-                          />
-                          <div className="flex gap-2 w-full">
+                          <div className="space-y-3">
+                            <input
+                              name="name"
+                              value={editForm.name}
+                              onChange={handleEditChange}
+                              placeholder="Project name"
+                              className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                            />
+                            <textarea
+                              name="description"
+                              value={editForm.description}
+                              onChange={handleEditChange}
+                              placeholder="Project description"
+                              rows="3"
+                              className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                            />
+                          </div>
+                          <div className="grid gap-3">
                             <button
                               type="button"
                               onClick={() => handleUpdateProject(project.id)}
                               disabled={saving}
-                              className="flex-1 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-stone-100 hover:bg-zinc-700 transition disabled:opacity-50"
+                              className="rounded-3xl bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-50"
                             >
                               Save
                             </button>
                             <button
                               type="button"
                               onClick={handleCancelEdit}
-                              className="flex-1 rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 transition"
+                              className="rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-500"
                             >
                               Cancel
                             </button>
                           </div>
                         </>
                       ) : (
-                        <>
+                        <div className="flex flex-wrap gap-3">
                           {(isAdmin || isTeamLeader) && (
                             <button
                               type="button"
                               onClick={() => handleEditProject(project)}
-                              className="rounded-lg bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-500 transition"
+                              className="rounded-3xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
                             >
                               Edit
                             </button>
@@ -326,20 +375,21 @@ export default function Projects() {
                               type="button"
                               onClick={() => handleDeleteProject(project.id)}
                               disabled={saving}
-                              className="rounded-lg bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-500 transition disabled:opacity-50"
+                              className="rounded-3xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:opacity-50"
                             >
                               Delete
                             </button>
                           )}
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
-              )
-            })
+                )
+              })}
+            </div>
           )}
-        </div>
+        </section>
+
       </div>
     </div>
   )
