@@ -178,17 +178,25 @@ export default function EmployeeManagement() {
     }
   }
 
-  return (
-    <div className="relative flex min-h-dvh items-start justify-center overflow-hidden bg-gradient-to-br from-stone-700 via-neutral-700 to-zinc-800 px-4 py-10 sm:px-6">
-      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-stone-200/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-8 h-64 w-64 rounded-full bg-zinc-200/20 blur-3xl" />
+  const employeeStats = {
+    total: employees.length,
+    active: employees.filter(e => e.status === 'active').length,
+    inactive: employees.filter(e => e.status === 'inactive').length,
+    teamLeaders: employees.filter(e => e.role === 'team_leader').length
+  }
 
-      <div className="relative z-10 w-full max-w-7xl space-y-8">
-        <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-2xl backdrop-blur-md sm:p-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  return (
+    <div className="relative min-h-dvh overflow-hidden bg-slate-950 px-4 py-10 sm:px-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-sky-500/20 to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute right-0 bottom-0 h-72 w-72 rounded-full bg-slate-700/30 blur-3xl" />
+
+      <div className="relative z-10 mx-auto max-w-7xl space-y-8">
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl backdrop-blur-xl">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="text-3xl font-semibold text-stone-800">Employee Management</h1>
-              <p className="mt-2 text-sm text-stone-600">
+              <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">Employee Management</p>
+              <h1 className="mt-4 text-4xl font-semibold text-white">Manage your team</h1>
+              <p className="mt-3 max-w-2xl text-sm text-slate-300">
                 {isAdmin ? 'Manage employees, roles, departments, and status.' : 'View employees in your team and department.'}
               </p>
             </div>
@@ -196,28 +204,44 @@ export default function EmployeeManagement() {
               <button
                 type="button"
                 onClick={handleOpenCreate}
-                className="rounded-lg bg-zinc-800 px-5 py-2.5 text-sm font-medium text-stone-100 transition hover:bg-zinc-700"
+                className="rounded-3xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
               >
                 Add Employee
               </button>
             )}
           </div>
-        </div>
+        </section>
 
-        <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-2xl backdrop-blur-md">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: 'Total employees', value: employeeStats.total, icon: '👥', style: 'from-sky-500/10 to-sky-400/10' },
+            { label: 'Active', value: employeeStats.active, icon: '✓', style: 'from-emerald-500/10 to-emerald-400/10' },
+            { label: 'Inactive', value: employeeStats.inactive, icon: '○', style: 'from-slate-500/10 to-slate-400/10' },
+            { label: 'Team leaders', value: employeeStats.teamLeaders, icon: '⭐', style: 'from-amber-500/10 to-amber-400/10' }
+          ].map((item) => (
+            <div key={item.label} className="rounded-3xl bg-slate-900/90 p-6 shadow-xl ring-1 ring-white/5">
+              <div className={`inline-flex rounded-3xl bg-gradient-to-r ${item.style} px-3 py-2 text-sm font-semibold text-slate-900`}>{item.icon}</div>
+              <p className="mt-5 text-sm text-slate-400">{item.label}</p>
+              <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
+            </div>
+          ))}
+        </section>
+
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+          <h2 className="text-2xl font-semibold text-white mb-6">Filters</h2>
           <form onSubmit={handleSearchSubmit} className="grid gap-4 md:grid-cols-4">
             <input
               name="search"
               value={filters.search}
               onChange={handleFilterChange}
               placeholder="Search by name or email"
-              className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
+              className="rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
             />
             <select
               name="role"
               value={filters.role}
               onChange={handleFilterChange}
-              className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
+              className="rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
             >
               <option value="">All roles</option>
               <option value="employee">Employee</option>
@@ -227,7 +251,7 @@ export default function EmployeeManagement() {
               name="department_id"
               value={filters.department_id}
               onChange={handleFilterChange}
-              className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
+              className="rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
             >
               <option value="">All departments</option>
               {departments.map((department) => (
@@ -238,119 +262,155 @@ export default function EmployeeManagement() {
             </select>
             <button
               type="submit"
-              className="rounded-lg bg-zinc-800 px-4 py-2.5 text-sm font-medium text-stone-100 transition hover:bg-zinc-700"
+              className="rounded-3xl bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
             >
               Apply Filters
             </button>
           </form>
-        </div>
+        </section>
 
         {isAdmin && (
-          <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-2xl backdrop-blur-md">
-            <form onSubmit={handleCreateDepartment} className="flex flex-col gap-3 sm:flex-row">
-              <input
-                value={newDepartmentName}
-                onChange={(e) => setNewDepartmentName(e.target.value)}
-                placeholder="Create department"
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
-              />
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-lg bg-zinc-800 px-4 py-2.5 text-sm font-medium text-stone-100 transition hover:bg-zinc-700 disabled:opacity-50"
-              >
-                Add Department
-              </button>
-            </form>
-          </div>
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+          <h2 className="text-2xl font-semibold text-white mb-6">Create department</h2>
+          <form onSubmit={handleCreateDepartment} className="flex flex-col gap-3 sm:flex-row">
+            <input
+              value={newDepartmentName}
+              onChange={(e) => setNewDepartmentName(e.target.value)}
+              placeholder="Department name"
+              className="flex-1 rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+            />
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-3xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-50"
+            >
+              Add Department
+            </button>
+          </form>
+        </section>
         )}
 
         {showForm && isAdmin && (
-          <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-2xl backdrop-blur-md">
-            <h2 className="text-xl font-semibold text-stone-800">{editId ? 'Edit Employee' : 'Create Employee'}</h2>
-            <form onSubmit={handleSubmit} className="mt-4 grid gap-4 sm:grid-cols-2">
-              <input
-                name="first_name"
-                value={form.first_name}
-                onChange={(e) => setForm((current) => ({ ...current, first_name: e.target.value }))}
-                placeholder="First name"
-                className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
-                required
-              />
-              <input
-                name="last_name"
-                value={form.last_name}
-                onChange={(e) => setForm((current) => ({ ...current, last_name: e.target.value }))}
-                placeholder="Last name"
-                className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
-                required
-              />
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
-                placeholder="Email"
-                className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
-                required
-                disabled={Boolean(editId)}
-              />
-              {!editId && (
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+          <h2 className="text-2xl font-semibold text-white mb-6">{editId ? 'Edit Employee' : 'Create Employee'}</h2>
+          <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">First Name</label>
                 <input
-                  type="password"
-                  name="password"
-                  value={form.password}
-                  onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
-                  placeholder="Password"
-                  className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
+                  name="first_name"
+                  value={form.first_name}
+                  onChange={(e) => setForm((current) => ({ ...current, first_name: e.target.value }))}
+                  placeholder="First name"
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Last Name</label>
+                <input
+                  name="last_name"
+                  value={form.last_name}
+                  onChange={(e) => setForm((current) => ({ ...current, last_name: e.target.value }))}
+                  placeholder="Last name"
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
+                  placeholder="Email"
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                  required
+                  disabled={Boolean(editId)}
+                />
+              </div>
+
+              {!editId && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-300">Password</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={form.password}
+                    onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
+                    placeholder="Password"
+                    className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                    required
+                  />
+                </div>
               )}
-              <select
-                name="role"
-                value={form.role}
-                onChange={(e) => setForm((current) => ({ ...current, role: e.target.value }))}
-                className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
-              >
-                <option value="employee">Employee</option>
-                <option value="team_leader">Team Leader</option>
-              </select>
-              <select
-                name="department_id"
-                value={form.department_id}
-                onChange={(e) => setForm((current) => ({ ...current, department_id: e.target.value }))}
-                className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
-              >
-                <option value="">No department</option>
-                {departments.map((department) => (
-                  <option key={department.id} value={department.id}>
-                    {department.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                name="position"
-                value={form.position}
-                onChange={(e) => setForm((current) => ({ ...current, position: e.target.value }))}
-                placeholder="Position"
-                className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
-              />
-              <select
-                name="status"
-                value={form.status}
-                onChange={(e) => setForm((current) => ({ ...current, status: e.target.value }))}
-                className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-              <div className="sm:col-span-2 flex gap-3">
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Role</label>
+                <select
+                  name="role"
+                  value={form.role}
+                  onChange={(e) => setForm((current) => ({ ...current, role: e.target.value }))}
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                >
+                  <option value="employee">Employee</option>
+                  <option value="team_leader">Team Leader</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Department</label>
+                <select
+                  name="department_id"
+                  value={form.department_id}
+                  onChange={(e) => setForm((current) => ({ ...current, department_id: e.target.value }))}
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                >
+                  <option value="">No department</option>
+                  {departments.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Position</label>
+                <input
+                  name="position"
+                  value={form.position}
+                  onChange={(e) => setForm((current) => ({ ...current, position: e.target.value }))}
+                  placeholder="Position"
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Status</label>
+                <select
+                  name="status"
+                  value={form.status}
+                  onChange={(e) => setForm((current) => ({ ...current, status: e.target.value }))}
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-lg bg-zinc-800 px-5 py-2.5 text-sm font-medium text-stone-100 transition hover:bg-zinc-700 disabled:opacity-50"
+                  className="flex-1 rounded-3xl bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-50"
                 >
-                  {editId ? 'Update Employee' : 'Create Employee'}
+                  {editId ? 'Update' : 'Create'}
                 </button>
                 <button
                   type="button"
@@ -358,73 +418,79 @@ export default function EmployeeManagement() {
                     setShowForm(false)
                     resetForm()
                   }}
-                  className="rounded-lg border border-stone-300 bg-stone-50 px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-stone-100"
+                  className="flex-1 rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-500"
                 >
                   Cancel
                 </button>
               </div>
-            </form>
-          </div>
+            </div>
+          </form>
+        </section>
         )}
 
-        <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-2xl backdrop-blur-md">
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+          <h2 className="text-2xl font-semibold text-white mb-6">Employees</h2>
           {loading ? (
-            <p className="text-stone-700">Loading employees...</p>
+            <p className="text-slate-300">Loading employees...</p>
           ) : error ? (
-            <p className="text-red-700">{error}</p>
+            <p className="text-rose-400">{error}</p>
           ) : employees.length === 0 ? (
-            <p className="text-stone-700">No employees found.</p>
+            <p className="text-slate-300">No employees found.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-stone-300 text-stone-600">
+                <thead className="border-b border-slate-700 text-slate-400">
                   <tr>
-                    <th className="px-3 py-2">First Name</th>
-                    <th className="px-3 py-2">Last Name</th>
-                    <th className="px-3 py-2">Email</th>
-                    <th className="px-3 py-2">Role</th>
-                    <th className="px-3 py-2">Department</th>
-                    <th className="px-3 py-2">Status</th>
-                    <th className="px-3 py-2">Position</th>
-                    <th className="px-3 py-2">Created</th>
-                    <th className="px-3 py-2">Actions</th>
+                    <th className="px-4 py-3">First Name</th>
+                    <th className="px-4 py-3">Last Name</th>
+                    <th className="px-4 py-3">Email</th>
+                    <th className="px-4 py-3">Role</th>
+                    <th className="px-4 py-3">Department</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Position</th>
+                    <th className="px-4 py-3">Created</th>
+                    <th className="px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {employees.map((employee) => (
-                    <tr key={employee.id} className="border-b border-stone-200 text-stone-800">
-                      <td className="px-3 py-2">{employee.first_name}</td>
-                      <td className="px-3 py-2">{employee.last_name}</td>
-                      <td className="px-3 py-2">{employee.email}</td>
-                      <td className="px-3 py-2">{employee.role === 'team_leader' ? 'Team Leader' : 'Employee'}</td>
-                      <td className="px-3 py-2">{employee.department_name || departmentMap[employee.department_id] || 'No department'}</td>
-                      <td className="px-3 py-2">
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${employee.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                    <tr key={employee.id} className="border-b border-slate-800 text-slate-200 hover:bg-slate-800/50 transition">
+                      <td className="px-4 py-3">{employee.first_name}</td>
+                      <td className="px-4 py-3">{employee.last_name}</td>
+                      <td className="px-4 py-3 text-slate-400">{employee.email}</td>
+                      <td className="px-4 py-3">
+                        <span className="rounded-full bg-sky-500/20 px-3 py-1 text-xs font-semibold text-sky-300">
+                          {employee.role === 'team_leader' ? 'Team Leader' : 'Employee'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">{employee.department_name || departmentMap[employee.department_id] || '-'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${employee.status === 'active' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-500/20 text-slate-300'}`}>
                           {employee.status}
                         </span>
                       </td>
-                      <td className="px-3 py-2">{employee.position || '-'}</td>
-                      <td className="px-3 py-2">{employee.created_at ? new Date(employee.created_at).toLocaleDateString() : '-'}</td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-3">{employee.position || '-'}</td>
+                      <td className="px-4 py-3 text-slate-400">{employee.created_at ? new Date(employee.created_at).toLocaleDateString() : '-'}</td>
+                      <td className="px-4 py-3">
                         {isAdmin ? (
                           <div className="flex gap-2">
                             <button
                               type="button"
                               onClick={() => handleEdit(employee)}
-                              className="rounded-lg bg-zinc-800 px-3 py-1 text-xs font-medium text-stone-100 hover:bg-zinc-700"
+                              className="rounded-2xl bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-500 transition"
                             >
                               Edit
                             </button>
                             <button
                               type="button"
                               onClick={() => handleStatusToggle(employee)}
-                              className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-1 text-xs font-medium text-stone-700 hover:bg-stone-100"
+                              className="rounded-2xl bg-slate-700 px-3 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-600 transition"
                             >
                               {employee.status === 'active' ? 'Deactivate' : 'Activate'}
                             </button>
                           </div>
                         ) : (
-                          <span className="text-xs text-stone-500">View only</span>
+                          <span className="text-xs text-slate-500">View only</span>
                         )}
                       </td>
                     </tr>
@@ -433,7 +499,7 @@ export default function EmployeeManagement() {
               </table>
             </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   )
