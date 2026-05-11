@@ -95,404 +95,202 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-stone-700 via-neutral-700 to-zinc-800 px-4 py-10 sm:px-6">
-        <div className="rounded-2xl border border-red-300 bg-red-50 p-8 text-center text-red-800 shadow-xl">
+      <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 py-10 sm:px-6">
+        <div className="rounded-[2rem] border border-red-500/20 bg-red-500/10 p-8 text-center text-red-100 shadow-2xl backdrop-blur-xl">
           <h1 className="text-2xl font-semibold">Dashboard Error</h1>
-          <p className="mt-3 text-sm leading-6">{error}</p>
+          <p className="mt-3 text-sm leading-6 text-red-100">{error}</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-slate-50 px-4 py-10 sm:px-6">
-      <div className="absolute top-0 left-0 h-72 w-72 rounded-full bg-slate-200/20 blur-3xl" />
-      <div className="absolute right-0 bottom-0 h-72 w-72 rounded-full bg-slate-200/20 blur-3xl" />
+    <div className="relative min-h-dvh overflow-hidden bg-slate-950 px-4 py-10 sm:px-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-sky-500/20 to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute right-0 bottom-0 h-72 w-72 rounded-full bg-slate-700/30 blur-3xl" />
 
-      <div className="relative z-10 mx-auto grid max-w-7xl gap-6 xl:grid-cols-[240px_1fr]">
-        <aside className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Workspace</p>
-            <h2 className="mt-4 text-2xl font-semibold text-slate-900">
-              {role === 'admin' ? 'Admin Dashboard' : 'Team Leader Dashboard'}
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              {role === 'admin' 
-                ? 'Quick navigation inside the dashboard area.' 
-                : 'Manage your team projects and tasks.'
-              }
-            </p>
+      <div className="relative z-10 mx-auto max-w-7xl space-y-6">
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl backdrop-blur-xl">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">{role === 'admin' ? 'Admin Dashboard' : 'Team Leader Dashboard'}</p>
+              <h1 className="mt-4 text-4xl font-semibold text-white">{role === 'admin' ? 'Manage business operations' : 'Manage your team workflow'}</h1>
+              <p className="mt-3 max-w-2xl text-sm text-slate-300">
+                {role === 'admin'
+                  ? 'View key performance metrics, active projects, and task health in one place.'
+                  : 'Track task progress and keep your team aligned with project goals.'
+                }
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-3xl bg-white/5 p-5 text-sm text-slate-200 ring-1 ring-white/10">
+                <p className="text-slate-400">Projects live</p>
+                <p className="mt-2 text-3xl font-semibold text-white">{totalProjects}</p>
+              </div>
+              <div className="rounded-3xl bg-white/5 p-5 text-sm text-slate-200 ring-1 ring-white/10">
+                <p className="text-slate-400">Tasks across the team</p>
+                <p className="mt-2 text-3xl font-semibold text-white">{totalTasks}</p>
+              </div>
+            </div>
           </div>
+        </section>
 
-          <nav className="space-y-2">
-            {role === 'admin' ? (
-              [
-                { label: 'Dashboard Overview', icon: '📊' },
-                { label: 'Project Management', icon: '📁', path: '/projects' },
-                { label: 'Task Management', icon: '✅', path: '/tasks' },
-                { label: 'Employee Management', icon: '👥', path: '/employees' },
-                { label: 'Notifications', icon: '🔔' },
+        <section className="grid gap-6 xl:grid-cols-[280px_1fr]">
+          <aside className="space-y-6 rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 shadow-2xl ring-1 ring-white/5">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">Quick links</p>
+              <p className="mt-3 text-sm leading-6 text-slate-300">Navigate directly to the tools you use most.</p>
+            </div>
+
+            <nav className="space-y-3">
+              {[
+                { label: 'Dashboard Overview', icon: '📊', path: '/dashboard' },
+                { label: 'Projects', icon: '📁', path: '/projects' },
+                { label: 'Tasks', icon: '✅', path: '/tasks' },
+                { label: 'Employees', icon: '👥', path: '/employees' },
                 { label: 'Settings', icon: '⚙️', path: '/settings' }
               ].map((item) => (
-                item.path ? (
-                  <Link
-                    key={item.label}
-                    to={item.path}
-                    className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
-                  >
-                    {item.icon} {item.label}
-                  </Link>
-                ) : (
-                  <button
-                    key={item.label}
-                    type="button"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
-                  >
-                    {item.icon} {item.label}
-                  </button>
-                )
-              ))
-            ) : (
-              [
-                { label: 'Dashboard Overview', icon: '📊' },
-                { label: 'Project Management', icon: '📁', path: '/projects' },
-                { label: 'Task Management', icon: '✅', path: '/tasks' },
-                { label: 'Employee Management', icon: '👥', path: '/employees' },
-                { label: 'Progress Reports', icon: '📈' },
-                { label: 'Settings', icon: '⚙️', path: '/settings' }
-              ].map((item) => (
-                item.path ? (
-                  <Link
-                    key={item.label}
-                    to={item.path}
-                    className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
-                  >
-                    {item.icon} {item.label}
-                  </Link>
-                ) : (
-                  <button
-                    key={item.label}
-                    type="button"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
-                  >
-                    {item.icon} {item.label}
-                  </button>
-                )
-              ))
-            )}
+                <Link
+                  key={item.label}
+                  to={item.path}
+                  className="block rounded-3xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
+                >
+                  <span className="mr-2">{item.icon}</span> {item.label}
+                </Link>
+              ))}
+            </nav>
+
             <button
               onClick={handleLogout}
-              className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-800 transition hover:border-red-300 hover:bg-red-100"
+              className="mt-4 w-full rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/20"
             >
               🚪 Logout
             </button>
-          </nav>
-        </aside>
+          </aside>
 
-        <main className="space-y-6">
-          {role === 'admin' ? (
-            <>
-              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <main className="space-y-6">
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {[
+                { label: 'Projects', value: totalProjects, color: 'from-sky-500/10 to-sky-400/10', icon: '📁' },
+                { label: 'Tasks', value: totalTasks, color: 'from-emerald-500/10 to-emerald-400/10', icon: '✅' },
+                { label: 'Completed', value: completedTasks, color: 'from-violet-500/10 to-violet-400/10', icon: '✔️' },
+                { label: 'In Progress', value: inProgressTasks, color: 'from-amber-500/10 to-amber-400/10', icon: '⏳' },
+                { label: 'Overdue', value: overdueTasks, color: 'from-rose-500/10 to-rose-400/10', icon: '⚠️' }
+              ].map((item) => (
+                <div key={item.label} className="rounded-3xl bg-slate-900/90 p-6 shadow-xl ring-1 ring-white/5">
+                  <div className={`inline-flex rounded-3xl bg-gradient-to-r ${item.color} px-3 py-2 text-sm font-semibold text-slate-900`}>{item.icon}</div>
+                  <p className="mt-5 text-sm text-slate-400">{item.label}</p>
+                  <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
+                </div>
+              ))}
+            </section>
+
+            <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+              <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 shadow-2xl ring-1 ring-white/5">
+                <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-600">Dashboard overview</p>
-                    <h1 className="mt-2 text-3xl font-semibold text-slate-900">Business Management Summary</h1>
-                    <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-                      Monitor active projects, task progress, and overdue work from one place. This page is built for business and task tracking.
-                    </p>
+                    <h2 className="text-2xl font-semibold text-white">Recent tasks</h2>
+                    <p className="mt-2 text-sm text-slate-400">Latest activity across the system.</p>
                   </div>
-                  <div className="rounded-3xl bg-slate-50 p-4 text-center shadow-sm ring-1 ring-slate-200">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Projects</p>
-                    <p className="mt-2 text-3xl font-semibold text-slate-900">{totalProjects}</p>
+                  <Link
+                    to="/tasks"
+                    className="rounded-full border border-slate-800 bg-slate-900/90 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
+                  >
+                    View all tasks
+                  </Link>
+                </div>
+
+                {recentTasks.length === 0 ? (
+                  <div className="mt-6 rounded-3xl border border-dashed border-slate-800 bg-slate-900/90 p-8 text-center text-slate-400">
+                    No recent tasks yet. Add tasks to begin tracking team activity.
+                  </div>
+                ) : (
+                  <div className="mt-6 space-y-4">
+                    {recentTasks.map((task) => (
+                      <div key={task.id} className="rounded-3xl border border-slate-800 bg-slate-900/90 p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="font-semibold text-white">{task.title || 'Untitled task'}</p>
+                            <p className="text-sm text-slate-400">{getProjectName(task.project_id)}</p>
+                          </div>
+                          <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${statusClasses[task.status] || 'bg-slate-700 text-slate-100'}`}>
+                            {statusLabels[task.status] || 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 shadow-2xl ring-1 ring-white/5">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-semibold text-white">Project progress</h2>
+                    <p className="mt-2 text-sm text-slate-400">Where your strongest projects stand today.</p>
+                  </div>
+                  <Link
+                    to="/projects"
+                    className="rounded-full border border-slate-800 bg-slate-900/90 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
+                  >
+                    View projects
+                  </Link>
+                </div>
+
+                {sortedProjects.length === 0 ? (
+                  <div className="mt-6 rounded-3xl border border-dashed border-slate-800 bg-slate-900/90 p-8 text-center text-slate-400">
+                    No project progress available yet.
+                  </div>
+                ) : (
+                  <div className="mt-6 space-y-4">
+                    {sortedProjects.map((project) => (
+                      <div key={project.id} className="rounded-3xl border border-slate-800 bg-slate-900/90 p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="font-semibold text-white">{project.name}</p>
+                            <p className="text-sm text-slate-400">{project.complete}/{project.total} completed</p>
+                          </div>
+                          <span className="text-sm font-semibold text-slate-200">{project.progress}%</span>
+                        </div>
+                        <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-800">
+                          <div className="h-2.5 rounded-full bg-sky-400" style={{ width: `${project.progress}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section className="grid gap-6 xl:grid-cols-2">
+              <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 shadow-2xl ring-1 ring-white/5">
+                <h2 className="text-2xl font-semibold text-white">Notifications</h2>
+                <p className="mt-2 text-sm text-slate-400">System alerts and quick updates.</p>
+                <div className="mt-6 space-y-4">
+                  <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-4">
+                    <p className="font-semibold text-white">System status</p>
+                    <p className="mt-2 text-sm text-slate-400">Everything is running smoothly at the moment.</p>
+                  </div>
+                  <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-4">
+                    <p className="font-semibold text-white">Team reminders</p>
+                    <p className="mt-2 text-sm text-slate-400">Overdue tasks will appear here once they exist.</p>
                   </div>
                 </div>
-              </section>
-
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">Total Projects</p>
-              <p className="mt-4 text-3xl font-semibold text-slate-900">{totalProjects}</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">Total Tasks</p>
-              <p className="mt-4 text-3xl font-semibold text-slate-900">{totalTasks}</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">Completed Tasks</p>
-              <p className="mt-4 text-3xl font-semibold text-slate-900">{completedTasks}</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">Tasks In Progress</p>
-              <p className="mt-4 text-3xl font-semibold text-slate-900">{inProgressTasks}</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">Overdue Tasks</p>
-              <p className="mt-4 text-3xl font-semibold text-slate-900">{overdueTasks}</p>
-            </div>
-          </section>
-
-          <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-            <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-semibold text-slate-900">Recent Tasks</h2>
-                  <p className="mt-2 text-sm text-slate-500">A quick look at the newest tasks in your system.</p>
-                </div>
-                <Link
-                  to="/tasks"
-                  className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                >
-                  View all tasks
-                </Link>
               </div>
 
-              {recentTasks.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-slate-600">
-                  No recent tasks yet. Add tasks from the Tasks page to begin tracking work.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {recentTasks.map((task) => (
-                    <div key={task.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="font-semibold text-slate-900">{task.title || 'Untitled task'}</p>
-                          <p className="text-sm text-slate-500">{getProjectName(task.project_id)}</p>
-                        </div>
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${statusClasses[task.status] || 'bg-slate-100 text-slate-800'}`}>
-                          {statusLabels[task.status] || 'Unknown'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-semibold text-slate-900">Project Progress</h2>
-                  <p className="mt-2 text-sm text-slate-500">A summary of project completion rates.</p>
-                </div>
+              <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 shadow-2xl ring-1 ring-white/5">
+                <h2 className="text-2xl font-semibold text-white">Employee management</h2>
+                <p className="mt-2 text-sm text-slate-400">Open the employee section to manage your team.</p>
                 <Link
-                  to="/projects"
-                  className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                  to="/employees"
+                  className="mt-6 inline-flex items-center justify-center rounded-full bg-sky-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
                 >
-                  View projects
-                </Link>
-              </div>
-
-              {sortedProjects.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-slate-600">
-                  No project progress available yet. Start by creating a project and assigning tasks.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {sortedProjects.map((project) => (
-                    <div key={project.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className="font-semibold text-slate-900">{project.name}</p>
-                          <p className="text-sm text-slate-500">{project.complete}/{project.total} completed</p>
-                        </div>
-                        <span className="text-sm font-semibold text-slate-700">{project.progress}%</span>
-                      </div>
-                      <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-200">
-                        <div className="h-2.5 rounded-full bg-slate-900" style={{ width: `${project.progress}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="grid gap-6 xl:grid-cols-2">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-2xl font-semibold text-slate-900">Notifications</h2>
-              <p className="mt-2 text-sm text-slate-500">Placeholder notifications for system updates.</p>
-
-              <div className="mt-6 space-y-4">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="font-medium text-slate-900">System status</p>
-                  <p className="mt-2 text-sm text-slate-600">No new updates. Your project and task pages are synchronized.</p>
-                </div>
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="font-medium text-slate-900">Task reminders</p>
-                  <p className="mt-2 text-sm text-slate-600">Overdue tasks will appear here once you have active assignments.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-2xl font-semibold text-slate-900">Employee Management</h2>
-              <p className="mt-2 text-sm text-slate-500">Manage your team members and departments from one place.</p>
-              <Link
-                to="/employees"
-                className="mt-6 inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
-              >
-                Open Employee Management
-              </Link>
-            </div>
-          </section>
-
-          {(totalProjects === 0 || totalTasks === 0) && (
-            <section className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-slate-700">
-              <h2 className="text-xl font-semibold text-slate-900">No projects or tasks yet</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                Your dashboard is ready. Add a project or task to begin tracking work across the system.
-              </p>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  to="/projects"
-                  className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
-                >
-                  Create Project
-                </Link>
-                <Link
-                  to="/tasks"
-                  className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-900 transition hover:bg-slate-50"
-                >
-                  Create Task
+                  Open Employees
                 </Link>
               </div>
             </section>
-          )}
-            </>
-          ) : (
-            <>
-              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-600">Team Leader Dashboard</p>
-                    <h1 className="mt-2 text-3xl font-semibold text-slate-900">Team Management Overview</h1>
-                    <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-                      Manage your team projects, monitor progress, and coordinate task assignments.
-                    </p>
-                  </div>
-                  <div className="rounded-3xl bg-slate-50 p-4 text-center shadow-sm ring-1 ring-slate-200">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Active Projects</p>
-                    <p className="mt-2 text-3xl font-semibold text-slate-900">{totalProjects}</p>
-                  </div>
-                </div>
-              </section>
-
-              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="text-sm font-medium text-slate-500">My Projects</p>
-                  <p className="mt-4 text-3xl font-semibold text-slate-900">{totalProjects}</p>
-                </div>
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="text-sm font-medium text-slate-500">Team Tasks</p>
-                  <p className="mt-4 text-3xl font-semibold text-slate-900">{totalTasks}</p>
-                </div>
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="text-sm font-medium text-slate-500">Completed</p>
-                  <p className="mt-4 text-3xl font-semibold text-slate-900">{completedTasks}</p>
-                </div>
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="text-sm font-medium text-slate-500">In Progress</p>
-                  <p className="mt-4 text-3xl font-semibold text-slate-900">{inProgressTasks}</p>
-                </div>
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="text-sm font-medium text-slate-500">Overdue Tasks</p>
-                  <p className="mt-4 text-3xl font-semibold text-slate-900">{overdueTasks}</p>
-                </div>
-              </section>
-
-              <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <h2 className="text-2xl font-semibold text-slate-900">Recent Tasks</h2>
-                      <p className="mt-2 text-sm text-slate-500">Track the latest activity in your team tasks.</p>
-                    </div>
-                    <Link
-                      to="/tasks"
-                      className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                    >
-                      View tasks
-                    </Link>
-                  </div>
-                  {recentTasks.length === 0 ? (
-                    <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
-                      No recent tasks yet.
-                    </div>
-                  ) : (
-                    <div className="mt-6 space-y-4">
-                      {recentTasks.map((task) => (
-                        <div key={task.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className="font-semibold text-slate-900">{task.title || 'Untitled task'}</p>
-                              <p className="text-sm text-slate-500">{getProjectName(task.project_id)}</p>
-                            </div>
-                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${statusClasses[task.status] || 'bg-slate-100 text-slate-800'}`}>
-                              {statusLabels[task.status] || 'Unknown'}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <h2 className="text-2xl font-semibold text-slate-900">Project Progress</h2>
-                      <p className="mt-2 text-sm text-slate-500">Completion summary by project.</p>
-                    </div>
-                    <Link
-                      to="/projects"
-                      className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                    >
-                      View projects
-                    </Link>
-                  </div>
-                  {sortedProjects.length === 0 ? (
-                    <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
-                      No project progress available yet.
-                    </div>
-                  ) : (
-                    <div className="mt-6 space-y-4">
-                      {sortedProjects.map((project) => (
-                        <div key={project.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <div>
-                              <p className="font-semibold text-slate-900">{project.name}</p>
-                              <p className="text-sm text-slate-500">{project.complete}/{project.total} completed</p>
-                            </div>
-                            <span className="text-sm font-semibold text-slate-700">{project.progress}%</span>
-                          </div>
-                          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-200">
-                            <div className="h-2.5 rounded-full bg-slate-900" style={{ width: `${project.progress}%` }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              <section className="grid gap-6 xl:grid-cols-3">
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h2 className="text-2xl font-semibold text-slate-900">Team Overview</h2>
-                  <p className="mt-2 text-sm text-slate-500">Placeholder for employee/team insights.</p>
-                </div>
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h2 className="text-2xl font-semibold text-slate-900">Reports</h2>
-                  <p className="mt-2 text-sm text-slate-500">Placeholder for report generation tools.</p>
-                </div>
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h2 className="text-2xl font-semibold text-slate-900">Settings</h2>
-                  <p className="mt-2 text-sm text-slate-500">Placeholder for team leader settings.</p>
-                </div>
-              </section>
-            </>
-          )}
-        </main>
+          </main>
+        </section>
       </div>
     </div>
   )
