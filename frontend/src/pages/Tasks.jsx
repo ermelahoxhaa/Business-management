@@ -238,179 +238,93 @@ export default function Tasks() {
     }
   }
 
+  const taskStats = {
+    total: tasks.length,
+    completed: tasks.filter(t => t.status === 'done').length,
+    inProgress: tasks.filter(t => t.status === 'in_progress').length,
+    highPriority: tasks.filter(t => t.priority === 'high').length
+  }
+
   return (
-    <div className="relative flex min-h-dvh items-start justify-center overflow-hidden bg-gradient-to-br from-stone-700 via-neutral-700 to-zinc-800 px-4 py-10 sm:px-6">
-      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-stone-200/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-8 h-64 w-64 rounded-full bg-zinc-200/20 blur-3xl" />
+    <div className="relative min-h-dvh overflow-hidden bg-slate-950 px-4 py-10 sm:px-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-sky-500/20 to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute right-0 bottom-0 h-72 w-72 rounded-full bg-slate-700/30 blur-3xl" />
 
-      <div className="relative z-10 w-full max-w-6xl space-y-8">
-        <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-2xl backdrop-blur-md sm:p-8">
-          <h1 className="text-3xl font-semibold text-stone-800">Task Management</h1>
-          <p className="mt-2 max-w-2xl text-sm text-stone-600">
-            {isTeamLeader
-              ? 'Create, assign, and update tasks for your team projects.'
-              : 'Monitor progress and manage task execution across projects.'}
-          </p>
-
-          {isTeamLeader && (
-          <form onSubmit={handleSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-stone-700">Title</label>
-              <input
-                name="title"
-                value={form.title}
-                onChange={handleChange}
-                required
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 placeholder-stone-400 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-stone-700">Description</label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                rows="4"
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 placeholder-stone-400 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-              />
-            </div>
-
+      <div className="relative z-10 mx-auto max-w-7xl space-y-8">
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl backdrop-blur-xl">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">Status</label>
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-              >
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">Task Management</p>
+              <h1 className="mt-4 text-4xl font-semibold text-white">Manage all tasks</h1>
+              <p className="mt-3 max-w-2xl text-sm text-slate-300">
+                {isTeamLeader
+                  ? 'Create, assign, and update tasks for your team projects.'
+                  : 'Monitor progress and manage task execution across projects.'}
+              </p>
             </div>
+          </div>
+        </section>
 
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: 'Total tasks', value: taskStats.total, icon: '📋', style: 'from-sky-500/10 to-sky-400/10' },
+            { label: 'Completed', value: taskStats.completed, icon: '✔️', style: 'from-emerald-500/10 to-emerald-400/10' },
+            { label: 'In progress', value: taskStats.inProgress, icon: '⏳', style: 'from-amber-500/10 to-amber-400/10' },
+            { label: 'High priority', value: taskStats.highPriority, icon: '⚠️', style: 'from-rose-500/10 to-rose-400/10' }
+          ].map((item) => (
+            <div key={item.label} className="rounded-3xl bg-slate-900/90 p-6 shadow-xl ring-1 ring-white/5">
+              <div className={`inline-flex rounded-3xl bg-gradient-to-r ${item.style} px-3 py-2 text-sm font-semibold text-slate-900`}>{item.icon}</div>
+              <p className="mt-5 text-sm text-slate-400">{item.label}</p>
+              <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
+            </div>
+          ))}
+        </section>
+
+        {isTeamLeader && (
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
             <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">Priority</label>
-              <select
-                name="priority"
-                value={form.priority}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-              >
-                {priorityOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <h2 className="text-2xl font-semibold text-white">Create task</h2>
+              <p className="mt-2 text-sm text-slate-400">Add a new task and assign it to team members.</p>
             </div>
+          </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">Due Date</label>
-              <input
-                type="date"
-                name="dueDate"
-                value={form.dueDate}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">Assigned User</label>
-              <select
-                name="assignedUser"
-                value={form.assignedUser}
-                onChange={handleChange}
-                required
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 placeholder-stone-400 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-              >
-                <option value="">Select a user</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {getUserName(user.id)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">Project</label>
-              <select
-                name="projectId"
-                value={form.projectId}
-                onChange={handleChange}
-                required
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-              >
-                <option value="">Select a project</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="sm:col-span-2 flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full rounded-lg bg-zinc-800 py-2.5 text-sm font-medium text-stone-100 transition duration-200 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-300/40 sm:w-auto"
-              >
-                {editingId ? 'Update Task' : 'Create Task'}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="w-full rounded-lg border border-stone-300 bg-stone-50 py-2.5 text-sm font-medium text-stone-700 transition duration-200 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-zinc-300/40 sm:w-auto"
-              >
-                Reset Form
-              </button>
-            </div>
-          </form>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold text-stone-100">Task List</h2>
-
-          <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-4 shadow-xl">
-            <div className="grid gap-4 sm:grid-cols-3">
+          <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-medium text-stone-700">Filter by Project</label>
-                <select
-                  name="projectId"
-                  value={filters.projectId}
-                  onChange={handleFilterChange}
-                  className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-                >
-                  <option value="">All Projects</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
-                {filters.projectId && (
-                  <p className="mt-2 text-sm text-stone-600">
-                    Progress: {getProjectProgress(filters.projectId)}%
-                  </p>
-                )}
+                <label className="mb-2 block text-sm font-medium text-slate-300">Task Title</label>
+                <input
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter task title"
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-stone-700">Filter by Status</label>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Description</label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  rows="3"
+                  placeholder="Describe the task"
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Status</label>
                 <select
                   name="status"
-                  value={filters.status}
-                  onChange={handleFilterChange}
-                  className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
+                  value={form.status}
+                  onChange={handleChange}
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                 >
-                  <option value="">All Statuses</option>
                   {statusOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -420,14 +334,44 @@ export default function Tasks() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-stone-700">Filter by Assigned User</label>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Priority</label>
+                <select
+                  name="priority"
+                  value={form.priority}
+                  onChange={handleChange}
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                >
+                  {priorityOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Due Date</label>
+                <input
+                  type="date"
+                  name="dueDate"
+                  value={form.dueDate}
+                  onChange={handleChange}
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Assign to</label>
                 <select
                   name="assignedUser"
-                  value={filters.assignedUser}
-                  onChange={handleFilterChange}
-                  className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
+                  value={form.assignedUser}
+                  onChange={handleChange}
+                  required
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                 >
-                  <option value="">All Users</option>
+                  <option value="">Select a user</option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
                       {getUserName(user.id)}
@@ -435,80 +379,190 @@ export default function Tasks() {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-300">Project</label>
+                <select
+                  name="projectId"
+                  value={form.projectId}
+                  onChange={handleChange}
+                  required
+                  className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                >
+                  <option value="">Select a project</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 rounded-3xl bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-50"
+                >
+                  {editingId ? 'Update' : 'Create'}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="flex-1 rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-500"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
+        )}
+
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+          <h2 className="text-2xl font-semibold text-white mb-6">Filters</h2>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">Project</label>
+              <select
+                name="projectId"
+                value={filters.projectId}
+                onChange={handleFilterChange}
+                className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+              >
+                <option value="">All Projects</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+              {filters.projectId && (
+                <p className="mt-2 text-sm text-slate-400">
+                  Progress: {getProjectProgress(filters.projectId)}%
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">Status</label>
+              <select
+                name="status"
+                value={filters.status}
+                onChange={handleFilterChange}
+                className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+              >
+                <option value="">All Statuses</option>
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">Assigned User</label>
+              <select
+                name="assignedUser"
+                value={filters.assignedUser}
+                onChange={handleFilterChange}
+                className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+              >
+                <option value="">All Users</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {getUserName(user.id)}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
+        </section>
 
-          <div className="grid gap-4">
-            {filteredTasks.length === 0 ? (
-              <div className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 text-stone-600 shadow-xl">
-                {isTeamLeader ? 'No tasks found for your projects yet.' : 'No tasks available yet.'}
-              </div>
-            ) : (
-              filteredTasks.map((task) => (
-                <div key={task.id} className="rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-xl">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="text-xl font-semibold text-stone-800">{task.title}</h3>
-                      <p className="text-sm text-stone-600">{task.description}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-sm">
-                      <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Project: {getProjectName(task.project_id)}</span>
-                      <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Assigned: {getUserName(task.assigned_to)}</span>
-                      <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Status: {statusOptions.find(s => s.value === task.status)?.label || task.status}</span>
-                      <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Priority: {priorityOptions.find(p => p.value === task.priority)?.label || task.priority}</span>
-                      <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">Due: {task.due_date ? task.due_date.slice(0, 10) : 'No due date'}</span>
+        <section className="grid gap-6">
+          {filteredTasks.length === 0 ? (
+            <div className="rounded-[2rem] border border-dashed border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400 shadow-xl">
+              {isTeamLeader ? 'No tasks found for your projects yet.' : 'No tasks available yet.'}
+            </div>
+          ) : (
+            <div className="grid gap-6">
+              {filteredTasks.map((task) => (
+                <div key={task.id} className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-2xl font-semibold text-white">{task.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-400">{task.description || 'No description provided.'}</p>
+                      
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-200">
+                          Project: {getProjectName(task.project_id)}
+                        </span>
+                        <span className="rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-200">
+                          Assigned: {getUserName(task.assigned_to)}
+                        </span>
+                        <span className="rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-200">
+                          Status: {statusOptions.find(s => s.value === task.status)?.label}
+                        </span>
+                        <span className="rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-200">
+                          Priority: {priorityOptions.find(p => p.value === task.priority)?.label}
+                        </span>
+                        <span className="rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-200">
+                          Due: {task.due_date ? task.due_date.slice(0, 10) : 'No due date'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="mt-4 flex flex-col gap-4 rounded-2xl border border-stone-200/20 bg-stone-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex gap-3">
-                      <select
-                        value={task.status}
-                        onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                        className="rounded-lg border border-stone-300 bg-stone-100 px-3 py-2 text-sm text-stone-800 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-                      >
-                        {statusOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex gap-3">
-                      {(isAdmin || isTeamLeader) && (
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(task)}
-                          className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-stone-100 transition duration-200 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
-                        >
-                          Edit
-                        </button>
-                      )}
-                      {isAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(task.id)}
-                          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm font-medium text-stone-700 transition duration-200 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
-                        >
-                          Delete
-                        </button>
-                      )}
+
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <select
+                      value={task.status}
+                      onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                      className="rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-2 text-sm font-medium text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                    >
+                      {statusOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    {(isAdmin || isTeamLeader) && (
                       <button
                         type="button"
-                        onClick={() => loadComments(task.id)}
-                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition duration-200 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300/40"
+                        onClick={() => handleEdit(task)}
+                        className="rounded-3xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
                       >
-                        Comments ({comments[task.id]?.length || 0})
+                        Edit
                       </button>
-                    </div>
+                    )}
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(task.id)}
+                        className="rounded-3xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500"
+                      >
+                        Delete
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => loadComments(task.id)}
+                      className="rounded-3xl bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-500"
+                    >
+                      Comments ({comments[task.id]?.length || 0})
+                    </button>
                   </div>
+
                   {comments[task.id] && (
-                    <div className="mt-4 rounded-2xl border border-stone-200/20 bg-stone-50 p-4">
-                      <h4 className="text-sm font-medium text-stone-700 mb-2">Comments</h4>
-                      <div className="space-y-2 mb-4">
+                    <div className="mt-6 rounded-3xl border border-slate-700 bg-slate-950/70 p-4">
+                      <h4 className="text-sm font-semibold text-slate-200 mb-4">Comments</h4>
+                      <div className="space-y-3 mb-4">
                         {comments[task.id].map((comment) => (
-                          <div key={comment.id} className="rounded-lg bg-white p-3 text-sm">
-                            <p className="text-stone-800">{comment.comment}</p>
-                            <p className="text-stone-500 text-xs mt-1">By {getUserName(comment.user_id)}</p>
+                          <div key={comment.id} className="rounded-2xl bg-slate-800/50 p-3">
+                            <p className="text-sm text-slate-100">{comment.comment}</p>
+                            <p className="text-slate-400 text-xs mt-2">By {getUserName(comment.user_id)}</p>
                           </div>
                         ))}
                       </div>
@@ -518,12 +572,12 @@ export default function Tasks() {
                           value={commentForms[task.id] || ''}
                           onChange={(e) => handleCommentChange(task.id, e.target.value)}
                           placeholder="Add a comment..."
-                          className="flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 placeholder-stone-400 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
+                          className="flex-1 rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                         />
                         <button
                           type="button"
                           onClick={() => handleAddComment(task.id)}
-                          className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-stone-100 transition duration-200 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
+                          className="rounded-2xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-400"
                         >
                           Add
                         </button>
@@ -531,10 +585,10 @@ export default function Tasks() {
                     </div>
                   )}
                 </div>
-              ))
-            )}
-          </div>
-        </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   )
