@@ -33,7 +33,8 @@ function App() {
   const location = useLocation()
   const role = getUserRole()
   const isDashboardUser = role === 'admin' || role === 'team_leader'
-  const isDashboard = location.pathname.startsWith('/dashboard') || (
+  const isEmployeeDashboard = role === 'employee' && location.pathname === '/home'
+  const isDashboard = location.pathname.startsWith('/dashboard') || isEmployeeDashboard || (
     isDashboardUser && ['/client', '/employees', '/tasks', '/projects', '/settings'].includes(location.pathname)
   )
 

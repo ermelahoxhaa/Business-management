@@ -29,6 +29,15 @@ export const getAllTasksController = async (req, res) => {
   }
 }
 
+export const getMyTasksController = async (req, res) => {
+  try {
+    const tasks = await getTasksByAssignedUserService(req.user.id)
+    res.json(tasks)
+  } catch (err) {
+    res.status(400).json({ message: err.message })
+  }
+}
+
 export const getTaskByIdController = async (req, res) => {
   try {
     const task = await getTaskByIdService(req.params.id)
@@ -51,6 +60,35 @@ export const getTasksByProjectController = async (req, res) => {
   try {
     const tasks = await getTasksByProjectService(req.params.projectId)
     res.json(tasks)
+  } catch (err) {
+    res.status(400).json({ message: err.message })
+  }
+}
+
+export const updateMyTaskStatusController = async (req, res) => {
+  try {
+    const task = await getTaskByIdService(req.params.id)
+
+    if (Number(task.assigned_to) !== Number(req.user.id)) {
+      return res.status(403).json({ message: 'You can update only your own task status' })
+    }
+
+    const allowedTransitions = {
+      todo: ['in_progress'],
+      in_progress: ['done'],
+      done: []
+    }
+    const nextStatus = req.body.status
+
+    if (!allowedTransitions[task.status]?.includes(nextStatus)) {
+      return res.status(400).json({ message: 'Employees can only move tasks from pending to in progress, then to completed' })
+    }
+
+    const result = await updateTaskService(req.params.id, {
+      status: nextStatus,
+      updated_by: req.user.id
+    })
+    res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })
   }
