@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import {
   createDepartment,
   createEmployee,
@@ -20,6 +22,8 @@ const defaultForm = {
   status: 'active'
 }
 
+const emptyFilters = { search: '', role: '', department_id: '' }
+
 export default function EmployeeManagement() {
   const userRole = getUserRole()
   const isAdmin = userRole === 'admin'
@@ -28,7 +32,7 @@ export default function EmployeeManagement() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [filters, setFilters] = useState({ search: '', role: '', department_id: '' })
+  const [filters, setFilters] = useState(emptyFilters)
   const [form, setForm] = useState(defaultForm)
   const [editId, setEditId] = useState(null)
   const [showForm, setShowForm] = useState(false)
@@ -39,35 +43,35 @@ export default function EmployeeManagement() {
     [departments]
   )
 
-  const loadDepartments = async () => {
+  const loadDepartments = useCallback(async () => {
     const response = await getDepartments()
     setDepartments(response.data || [])
-  }
+  }, [])
 
-  const loadEmployees = async () => {
+  const loadEmployees = useCallback(async (activeFilters) => {
     const response = await getEmployees({
-      search: filters.search || undefined,
-      role: filters.role || undefined,
-      department_id: filters.department_id || undefined
+      search: activeFilters.search || undefined,
+      role: activeFilters.role || undefined,
+      department_id: activeFilters.department_id || undefined
     })
     setEmployees(response.data || [])
-  }
+  }, [])
 
-  const loadData = async () => {
+  const loadData = useCallback(async (activeFilters) => {
     setLoading(true)
     setError('')
     try {
-      await Promise.all([loadDepartments(), loadEmployees()])
+      await Promise.all([loadDepartments(), loadEmployees(activeFilters)])
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to load employees')
     } finally {
       setLoading(false)
     }
-  }
+  }, [loadDepartments, loadEmployees])
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData(emptyFilters)
+  }, [loadData])
 
   const handleFilterChange = (e) => {
     setFilters((current) => ({ ...current, [e.target.name]: e.target.value }))
@@ -77,7 +81,7 @@ export default function EmployeeManagement() {
     e.preventDefault()
     setLoading(true)
     try {
-      await loadEmployees()
+      await loadEmployees(filters)
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to filter employees')
     } finally {
@@ -138,7 +142,7 @@ export default function EmployeeManagement() {
         })
       }
 
-      await loadEmployees()
+      await loadEmployees(filters)
       setShowForm(false)
       resetForm()
     } catch (err) {
@@ -154,7 +158,7 @@ export default function EmployeeManagement() {
     setSaving(true)
     try {
       await updateEmployeeStatus(employee.id, nextStatus)
-      await loadEmployees()
+      await loadEmployees(filters)
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to update employee status')
     } finally {
@@ -191,6 +195,14 @@ export default function EmployeeManagement() {
       <div className="pointer-events-none absolute right-0 bottom-0 h-72 w-72 rounded-full bg-slate-700/30 blur-3xl" />
 
       <div className="relative z-10 mx-auto max-w-7xl space-y-8">
+        <Link
+          to="/dashboard"
+          aria-label="Back to dashboard"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-slate-900/80 text-slate-200 shadow-lg shadow-slate-950/20 transition hover:border-sky-400/40 hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-sky-400/40"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+
         <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl backdrop-blur-xl">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>

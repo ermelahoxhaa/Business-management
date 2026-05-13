@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React from "react"
 import { X } from "lucide-react";
 
 export default function CreateClientModal({ isOpen, onClose }) {

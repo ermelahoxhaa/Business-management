@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { getProjects, getTasks, createProject, updateProject, deleteProject, getUsers } from '../services/api'
 import { getUserRole, getCurrentUser } from '../services/auth'
 
@@ -195,6 +197,14 @@ export default function Projects() {
       <div className="pointer-events-none absolute right-0 bottom-0 h-72 w-72 rounded-full bg-slate-700/30 blur-3xl" />
 
       <div className="relative z-10 mx-auto max-w-7xl space-y-8">
+        <Link
+          to="/dashboard"
+          aria-label="Back to dashboard"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-slate-900/80 text-slate-200 shadow-lg shadow-slate-950/20 transition hover:border-sky-400/40 hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-sky-400/40"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+
         <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl backdrop-blur-xl">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
