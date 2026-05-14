@@ -1,9 +1,19 @@
 import {
   createEmployeeService,
   getEmployeesService,
+  getMyEmployeeProfileService,
   updateEmployeeService,
   updateEmployeeStatusService
 } from '../services/employeeService.js'
+
+export const getMyEmployeeProfileController = async (req, res) => {
+  try {
+    const profile = await getMyEmployeeProfileService(req.user.id)
+    res.json(profile)
+  } catch (error) {
+    res.status(404).json({ message: error.message })
+  }
+}
 
 export const getEmployeesController = async (req, res) => {
   try {

@@ -10,7 +10,8 @@ export const createCommentController = async (req, res) => {
     const comment = await createCommentService({
       ...req.body,
       user_id: req.user.id,
-      created_by: req.user.id
+      created_by: req.user.id,
+      role: req.user.role
     })
     res.status(201).json(comment)
   } catch (err) {

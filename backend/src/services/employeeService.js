@@ -4,6 +4,7 @@ import {
   createUser,
   findUserByEmail,
   getEmployeeById,
+  getEmployeeByUserId,
   getEmployees,
   getRoleByName,
   updateEmployee,
@@ -32,6 +33,15 @@ const mapEmployee = (item) => ({
   created_at: item.created_at,
   updated_at: item.updated_at
 })
+
+export const getMyEmployeeProfileService = async (userId) => {
+  const profile = await getEmployeeByUserId(userId)
+  if (!profile) {
+    throw new Error('Employee profile not found')
+  }
+
+  return mapEmployee(profile)
+}
 
 export const getEmployeesService = async ({
   search,

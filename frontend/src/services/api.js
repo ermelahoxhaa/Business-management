@@ -39,6 +39,8 @@ export const createComment = (data) => API.post('/comments', data)
 export const getDepartments = () => API.get('/departments')
 export const createDepartment = (data) => API.post('/departments', data)
 
+export const getMyEmployeeProfile = () => API.get('/employees/me')
+
 export const getEmployees = (params) => API.get('/employees', { params })
 export const createEmployee = (data) => API.post('/employees', data)
 export const updateEmployee = (id, data) => API.put(`/employees/${id}`, data)

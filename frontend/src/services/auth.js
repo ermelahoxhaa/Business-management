@@ -17,6 +17,16 @@ export const getUserRole = () => {
   return Cookies.get(ROLE_KEY)
 }
 
+export const getRoleLabel = (role) => {
+  const labels = {
+    admin: 'Admin',
+    team_leader: 'Manager',
+    employee: 'Employee'
+  }
+
+  return labels[role] || 'Employee'
+}
+
 export const getDefaultRouteForRole = (role) => {
   return role === 'admin' || role === 'team_leader' ? '/dashboard' : '/home'
 }

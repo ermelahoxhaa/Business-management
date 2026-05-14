@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { getProjects, getTasks, updateTask } from '../services/api'
-=======
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
@@ -17,16 +12,17 @@ import {
   Loader2,
   LogOut,
   Mail,
+  MessageSquare,
   PlayCircle,
+  Settings,
   UserRound
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { getMyProjects, getMyTasks, getProjects, getTasks, updateMyTaskStatus } from '../services/api'
->>>>>>> 851624ef2b4385542fa6fa3c33d1fef898cb6b3a
-import { getCurrentUser, logout } from '../services/auth'
+import { Link, useNavigate } from 'react-router-dom'
+import { createComment, getComments, getMyEmployeeProfile, getMyProjects, getMyTasks, updateMyTaskStatus } from '../services/api'
+import { getCurrentUser, getRoleLabel, logout } from '../services/auth'
 
 const statusLabels = {
-  todo: 'Pending',
+  todo: 'To Do',
   in_progress: 'In Progress',
   done: 'Completed'
 }
@@ -90,53 +86,59 @@ const getNextStatus = (status) => {
   return null
 }
 
+const formatCommentAuthor = (comment, currentUserId) => {
+  if (Number(comment.user_id) === Number(currentUserId)) {
+    return 'You'
+  }
+
+  const author = comment.User
+  const name = [author?.first_name, author?.last_name].filter(Boolean).join(' ')
+  return name || 'Team member'
+}
+
 export default function EmployeeHome() {
   const navigate = useNavigate()
   const currentUser = getCurrentUser()
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
+  const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [taskFilter, setTaskFilter] = useState('all')
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
+  const [expandedTaskId, setExpandedTaskId] = useState(null)
+  const [commentsByTask, setCommentsByTask] = useState({})
+  const [commentDrafts, setCommentDrafts] = useState({})
+  const [commentLoadingId, setCommentLoadingId] = useState(null)
+  const [savingCommentId, setSavingCommentId] = useState(null)
 
+  // Employee routes only return work assigned to the signed-in user.
   const loadEmployeeData = useCallback(async () => {
     setLoading(true)
     setError('')
 
     try {
-      const [tasksResponse, projectsResponse] = await Promise.all([
-        getMyTasks().catch(() => getTasks()),
-        getMyProjects().catch(() => getProjects())
+      const [tasksResponse, projectsResponse, profileResponse] = await Promise.all([
+        getMyTasks(),
+        getMyProjects(),
+        getMyEmployeeProfile().catch(() => ({ data: null }))
       ])
 
-      const loadedTasks = tasksResponse.data || []
-      const employeeTasks = loadedTasks.filter((task) => Number(task.assigned_to) === Number(currentUser?.id))
-      const scopedTasks = tasksResponse.config?.url === '/tasks/my-tasks' ? loadedTasks : employeeTasks
-      const scopedProjectIds = new Set(scopedTasks.map((task) => Number(task.project_id)))
-      const loadedProjects = projectsResponse.data || []
-
-      setTasks(scopedTasks)
-      setProjects(loadedProjects.filter((project) => scopedProjectIds.has(Number(project.id))))
+      setTasks(tasksResponse.data || [])
+      setProjects(projectsResponse.data || [])
+      setProfile(profileResponse.data || null)
     } catch (err) {
       console.error(err)
       setError(err.response?.data?.message || 'Unable to load your workspace right now.')
     } finally {
       setLoading(false)
     }
-  }, [currentUser?.id])
+  }, [])
 
   useEffect(() => {
     loadEmployeeData()
-<<<<<<< HEAD
-  }, [])
-
-  const employeeTasks = useMemo(() => {
-    return tasks.filter((task) => Number(task.assigned_to) === Number(currentUser?.id))
-  }, [tasks, currentUser?.id])
-=======
   }, [loadEmployeeData])
->>>>>>> 851624ef2b4385542fa6fa3c33d1fef898cb6b3a
 
   const projectById = useMemo(() => {
     return projects.reduce((map, project) => {
@@ -194,26 +196,35 @@ export default function EmployeeHome() {
   }, [projectById, tasks])
 
   const notifications = useMemo(() => {
-    const newAssigned = tasks
+    const overdueItems = deadlineGroups.overdue.slice(0, 2).map((task) => ({
+      id: `overdue-${task.id}`,
+      title: 'Overdue task',
+      message: `${task.title || 'Untitled task'} was due ${formatDate(task.due_date)}`
+    }))
+
+    const dueTodayItems = deadlineGroups.today.slice(0, 2).map((task) => ({
+      id: `today-${task.id}`,
+      title: 'Due today',
+      message: `${task.title || 'Untitled task'} is due today`
+    }))
+
+    const pendingItems = tasks
       .filter((task) => task.status === 'todo')
       .slice(0, 2)
       .map((task) => ({
-        id: `assigned-${task.id}`,
-        title: 'New assigned task',
+        id: `pending-${task.id}`,
+        title: 'Waiting to start',
         message: task.title || 'Untitled task'
       }))
 
-    const reminders = [...deadlineGroups.today, ...deadlineGroups.overdue].slice(0, 2).map((task) => ({
-      id: `reminder-${task.id}`,
-      title: isOverdue(task) ? 'Overdue reminder' : 'Due today',
-      message: `${task.title || 'Untitled task'} - ${formatDate(task.due_date)}`
-    }))
-
-    return [...newAssigned, ...reminders].slice(0, 4)
+    return [...overdueItems, ...dueTodayItems, ...pendingItems].slice(0, 4)
   }, [deadlineGroups, tasks])
 
   const fullName = [currentUser?.first_name, currentUser?.last_name].filter(Boolean).join(' ') || 'Employee'
   const firstName = currentUser?.first_name || fullName
+  const roleLabel = getRoleLabel(profile?.role || 'employee')
+  const departmentLabel = profile?.department_name || 'No department assigned'
+  const positionLabel = profile?.position?.trim() || 'No position set'
 
   const handleLogout = () => {
     logout()
@@ -240,249 +251,73 @@ export default function EmployeeHome() {
     }
   }
 
-<<<<<<< HEAD
-  const handleLogout = () => {
-    logout()
-    navigate('/login', { replace: true })
+  const loadTaskComments = async (taskId) => {
+    setCommentLoadingId(taskId)
+    try {
+      const response = await getComments(taskId)
+      setCommentsByTask((current) => ({ ...current, [taskId]: response.data || [] }))
+    } catch (err) {
+      console.error(err)
+      setError(err.response?.data?.message || 'Unable to load task comments.')
+    } finally {
+      setCommentLoadingId(null)
+    }
   }
 
-  const fullName = [currentUser?.first_name, currentUser?.last_name].filter(Boolean).join(' ') || 'Employee'
+  const handleToggleComments = async (taskId) => {
+    if (expandedTaskId === taskId) {
+      setExpandedTaskId(null)
+      return
+    }
 
-  const recentTasks = [...employeeTasks]
-    .sort((a, b) => {
-      const aDate = new Date(a.created_at || a.updated_at || a.due_date || 0)
-      const bDate = new Date(b.created_at || b.updated_at || b.due_date || 0)
-      return bDate - aDate
-    })
-    .slice(0, 5)
+    setExpandedTaskId(taskId)
+    if (!commentsByTask[taskId]) {
+      await loadTaskComments(taskId)
+    }
+  }
 
-  const sortedProjects = [...employeeProjects].sort((a, b) => b.progress - a.progress).slice(0, 4)
+  const handleCommentChange = (taskId, value) => {
+    setCommentDrafts((current) => ({ ...current, [taskId]: value }))
+  }
 
-  if (loading) {
-    return (
-      <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-stone-700 via-neutral-700 to-zinc-800 px-4 py-10 sm:px-6">
-        <div className="text-stone-100 text-lg font-medium">Loading dashboard…</div>
-=======
+  const handleAddComment = async (taskId) => {
+    const commentText = (commentDrafts[taskId] || '').trim()
+    if (!commentText) return
+
+    setSavingCommentId(taskId)
+    setError('')
+
+    try {
+      await createComment({
+        task_id: taskId,
+        comment: commentText
+      })
+      setCommentDrafts((current) => ({ ...current, [taskId]: '' }))
+      await loadTaskComments(taskId)
+      setNotice('Comment added to the task.')
+    } catch (err) {
+      console.error(err)
+      setError(err.response?.data?.message || 'Unable to add comment.')
+    } finally {
+      setSavingCommentId(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-slate-950 px-4 text-white">
         <Loader2 className="mr-3 h-5 w-5 animate-spin text-sky-300" />
         Loading your employee workspace...
->>>>>>> 851624ef2b4385542fa6fa3c33d1fef898cb6b3a
       </div>
     )
   }
 
   return (
-<<<<<<< HEAD
-    <div className="relative min-h-dvh overflow-hidden bg-slate-950 px-4 py-10 sm:px-6">
+    <div className="relative min-h-dvh overflow-hidden bg-slate-950 px-4 py-8 text-slate-100 sm:px-6">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-sky-500/20 to-transparent blur-3xl" />
       <div className="pointer-events-none absolute right-0 bottom-0 h-72 w-72 rounded-full bg-slate-700/30 blur-3xl" />
 
-      <div className="relative z-10 mx-auto max-w-7xl space-y-6">
-        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl backdrop-blur-xl">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">Employee Dashboard</p>
-              <h1 className="mt-4 text-4xl font-semibold text-white">Welcome back, {fullName}</h1>
-              <p className="mt-3 max-w-2xl text-sm text-slate-300">
-                Track your tasks, monitor project progress, and stay updated with your work.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-3xl bg-white/5 p-5 text-sm text-slate-200 ring-1 ring-white/10">
-                <p className="text-slate-400">My projects</p>
-                <p className="mt-2 text-3xl font-semibold text-white">{employeeProjects.length}</p>
-              </div>
-              <div className="rounded-3xl bg-white/5 p-5 text-sm text-slate-200 ring-1 ring-white/10">
-                <p className="text-slate-400">My tasks</p>
-                <p className="mt-2 text-3xl font-semibold text-white">{summary.assigned}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="grid gap-6 xl:grid-cols-[280px_1fr]">
-          <aside className="space-y-6 rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 shadow-2xl ring-1 ring-white/5">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">Quick links</p>
-              <p className="mt-3 text-sm leading-6 text-slate-300">Navigate directly to your workspace tools.</p>
-            </div>
-
-            <nav className="space-y-3">
-              {[
-                { label: 'My Dashboard', icon: '📊', path: '/home' },
-                { label: 'My Tasks', icon: '✅', path: '/tasks' },
-                { label: 'Settings', icon: '⚙️', path: '/settings' }
-              ].map((item) => (
-                <Link
-                  key={item.label}
-                  to={item.path}
-                  className="block rounded-3xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
-                >
-                  <span className="mr-2">{item.icon}</span> {item.label}
-                </Link>
-              ))}
-            </nav>
-
-            <button
-              onClick={handleLogout}
-              className="mt-4 w-full rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/20"
-            >
-              🚪 Logout
-            </button>
-          </aside>
-
-          <main className="space-y-6">
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {[
-                { label: 'Assigned', value: summary.assigned, color: 'from-sky-500/10 to-sky-400/10', icon: '📋' },
-                { label: 'Completed', value: summary.completed, color: 'from-emerald-500/10 to-emerald-400/10', icon: '✔️' },
-                { label: 'In Progress', value: summary.inProgress, color: 'from-amber-500/10 to-amber-400/10', icon: '⏳' },
-                { label: 'Overdue', value: summary.overdue, color: 'from-rose-500/10 to-rose-400/10', icon: '⚠️' }
-              ].map((item) => (
-                <div key={item.label} className="rounded-3xl bg-slate-900/90 p-6 shadow-xl ring-1 ring-white/5">
-                  <div className={`inline-flex rounded-3xl bg-gradient-to-r ${item.color} px-3 py-2 text-sm font-semibold text-slate-900`}>{item.icon}</div>
-                  <p className="mt-5 text-sm text-slate-400">{item.label}</p>
-                  <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
-                </div>
-              ))}
-            </section>
-
-            <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-              <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 shadow-2xl ring-1 ring-white/5">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-2xl font-semibold text-white">My recent tasks</h2>
-                    <p className="mt-2 text-sm text-slate-400">Latest activity on your assigned tasks.</p>
-                  </div>
-                  <Link
-                    to="/tasks"
-                    className="rounded-full border border-slate-800 bg-slate-900/90 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
-                  >
-                    View all tasks
-                  </Link>
-                </div>
-
-                {recentTasks.length === 0 ? (
-                  <div className="mt-6 rounded-3xl border border-dashed border-slate-800 bg-slate-900/90 p-8 text-center text-slate-400">
-                    No tasks assigned yet. Check back later for new assignments.
-                  </div>
-                ) : (
-                  <div className="mt-6 space-y-4">
-                    {recentTasks.map((task) => (
-                      <div key={task.id} className="rounded-3xl border border-slate-800 bg-slate-900/90 p-4">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <p className="font-semibold text-white">{task.title || 'Untitled task'}</p>
-                            <p className="text-sm text-slate-400">{getProjectName(task.project_id)}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${statusStyles[task.status] || 'bg-slate-700 text-slate-100'}`}>
-                              {statusOptions.find((option) => option.value === task.status)?.label || 'Unknown'}
-                            </span>
-                            {updatingTaskId === task.id && (
-                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-400 border-t-transparent"></div>
-                            )}
-                          </div>
-                        </div>
-                        {task.status !== 'done' && (
-                          <div className="mt-3 flex gap-2">
-                            {statusOptions.map((option) => (
-                              <button
-                                key={option.value}
-                                onClick={() => handleStatusChange(task.id, option.value)}
-                                disabled={updatingTaskId === task.id}
-                                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                                  task.status === option.value
-                                    ? 'bg-sky-500 text-white'
-                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                }`}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 shadow-2xl ring-1 ring-white/5">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-2xl font-semibold text-white">Project progress</h2>
-                    <p className="mt-2 text-sm text-slate-400">Your active projects and completion status.</p>
-                  </div>
-                </div>
-
-                {sortedProjects.length === 0 ? (
-                  <div className="mt-6 rounded-3xl border border-dashed border-slate-800 bg-slate-900/90 p-8 text-center text-slate-400">
-                    No project assignments yet.
-                  </div>
-                ) : (
-                  <div className="mt-6 space-y-4">
-                    {sortedProjects.map(({ project, projectId, total, completed, progress }) => (
-                      <div key={projectId} className="rounded-3xl border border-slate-800 bg-slate-900/90 p-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <div>
-                            <p className="font-semibold text-white">{project?.name || 'Unknown Project'}</p>
-                            <p className="text-sm text-slate-400">{completed}/{total} completed</p>
-                          </div>
-                          <span className="text-sm font-semibold text-slate-200">{progress}%</span>
-                        </div>
-                        <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-800">
-                          <div className="h-2.5 rounded-full bg-sky-400" style={{ width: `${progress}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
-
-            <section className="grid gap-6 xl:grid-cols-2">
-              <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 shadow-2xl ring-1 ring-white/5">
-                <h2 className="text-2xl font-semibold text-white">Notifications</h2>
-                <p className="mt-2 text-sm text-slate-400">Updates and reminders for your work.</p>
-                <div className="mt-6 space-y-4">
-                  <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-4">
-                    <p className="font-semibold text-white">Task updates</p>
-                    <p className="mt-2 text-sm text-slate-400">You'll receive notifications when tasks are assigned or updated.</p>
-                  </div>
-                  <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-4">
-                    <p className="font-semibold text-white">Project deadlines</p>
-                    <p className="mt-2 text-sm text-slate-400">Stay informed about upcoming project milestones.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 shadow-2xl ring-1 ring-white/5">
-                <h2 className="text-2xl font-semibold text-white">Quick actions</h2>
-                <p className="mt-2 text-sm text-slate-400">Common tasks you can perform.</p>
-                <div className="mt-6 space-y-3">
-                  <Link
-                    to="/tasks"
-                    className="block rounded-3xl bg-sky-500 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-sky-400"
-                  >
-                    View My Tasks
-                  </Link>
-                  <Link
-                    to="/settings"
-                    className="block rounded-3xl border border-slate-800 bg-slate-900/90 px-5 py-3 text-center text-sm font-semibold text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
-                  >
-                    Update Profile
-                  </Link>
-                </div>
-              </div>
-            </section>
-          </main>
-        </section>
-=======
-    <div className="min-h-dvh bg-slate-950 px-4 py-8 text-slate-100 sm:px-6">
-      <div className="mx-auto grid max-w-7xl gap-6 xl:grid-cols-[280px_1fr]">
+      <div className="relative z-10 mx-auto grid max-w-7xl gap-6 xl:grid-cols-[280px_1fr]">
         <aside className="h-fit rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-2xl">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-400 text-slate-950">
@@ -490,23 +325,23 @@ export default function EmployeeHome() {
             </div>
             <div className="min-w-0">
               <p className="truncate font-semibold text-white">{fullName}</p>
-              <p className="truncate text-sm text-slate-400">Employee Workspace</p>
+              <p className="truncate text-sm text-slate-400">Employee workspace</p>
             </div>
           </div>
 
           <nav className="mt-8 space-y-2">
             {[
-              { label: 'Overview', icon: LayoutDashboard },
-              { label: 'My Tasks', icon: ListChecks },
-              { label: 'Deadlines', icon: CalendarClock },
-              { label: 'Projects', icon: Briefcase },
-              { label: 'Notifications', icon: Bell }
+              { label: 'Overview', icon: LayoutDashboard, href: '#overview' },
+              { label: 'My Tasks', icon: ListChecks, href: '#my-tasks' },
+              { label: 'Deadlines', icon: CalendarClock, href: '#deadlines' },
+              { label: 'Projects', icon: Briefcase, href: '#projects' },
+              { label: 'Notifications', icon: Bell, href: '#notifications' }
             ].map((item) => {
               const Icon = item.icon
               return (
                 <a
                   key={item.label}
-                  href={`#${item.label.toLowerCase().replace(' ', '-')}`}
+                  href={item.href}
                   className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
                 >
                   <Icon className="h-4 w-4" />
@@ -514,6 +349,13 @@ export default function EmployeeHome() {
                 </a>
               )
             })}
+            <Link
+              to="/settings"
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </Link>
           </nav>
 
           <div className="mt-8 rounded-3xl border border-slate-800 bg-slate-950/80 p-5">
@@ -523,8 +365,9 @@ export default function EmployeeHome() {
                 <Mail className="h-4 w-4 text-sky-300" />
                 <span className="truncate">{currentUser?.email || 'No email available'}</span>
               </p>
-              <p>Role: Employee</p>
-              <p>Team: Not assigned yet</p>
+              <p>Role: {roleLabel}</p>
+              <p>Department: {departmentLabel}</p>
+              <p>Position: {positionLabel}</p>
             </div>
           </div>
 
@@ -544,12 +387,19 @@ export default function EmployeeHome() {
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-300">Employee dashboard</p>
                 <h1 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">Welcome back, {firstName}</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Here is your work overview for today.</p>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+                  Review your assigned work, update task progress, and keep communication on each task in one place.
+                </p>
               </div>
-              <div className="rounded-3xl bg-slate-950/70 p-5 ring-1 ring-white/10">
-                <p className="text-sm text-slate-400">Today focus</p>
-                <p className="mt-2 text-2xl font-semibold text-white">{deadlineGroups.today.length + summary.inProgress}</p>
-                <p className="mt-1 text-sm text-slate-400">active or due today</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-3xl bg-slate-950/70 p-5 ring-1 ring-white/10">
+                  <p className="text-sm text-slate-400">My projects</p>
+                  <p className="mt-2 text-3xl font-semibold text-white">{projects.length}</p>
+                </div>
+                <div className="rounded-3xl bg-slate-950/70 p-5 ring-1 ring-white/10">
+                  <p className="text-sm text-slate-400">My tasks</p>
+                  <p className="mt-2 text-3xl font-semibold text-white">{summary.total}</p>
+                </div>
               </div>
             </div>
 
@@ -563,7 +413,7 @@ export default function EmployeeHome() {
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             {[
               { label: 'Total assigned', value: summary.total, icon: ListChecks, color: 'text-sky-300' },
-              { label: 'Pending', value: summary.pending, icon: Clock3, color: 'text-amber-300' },
+              { label: 'To Do', value: summary.pending, icon: Clock3, color: 'text-amber-300' },
               { label: 'In progress', value: summary.inProgress, icon: PlayCircle, color: 'text-blue-300' },
               { label: 'Completed', value: summary.completed, icon: CheckCircle2, color: 'text-emerald-300' },
               { label: 'Overdue', value: summary.overdue, icon: AlertTriangle, color: 'text-rose-300' }
@@ -584,12 +434,12 @@ export default function EmployeeHome() {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold">My Tasks</h2>
-                  <p className="mt-1 text-sm text-slate-500">Advance your own work from pending to in progress, then completed.</p>
+                  <p className="mt-1 text-sm text-slate-500">Move work from To Do to In Progress, then Completed. Use comments to discuss each task.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {[
                     ['all', 'All'],
-                    ['todo', 'Pending'],
+                    ['todo', 'To Do'],
                     ['in_progress', 'In Progress'],
                     ['done', 'Completed'],
                     ['overdue', 'Overdue']
@@ -612,41 +462,101 @@ export default function EmployeeHome() {
                 </div>
               ) : (
                 <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200">
-                  <div className="hidden grid-cols-[1.4fr_1fr_0.7fr_0.8fr_0.8fr_0.8fr] gap-4 bg-slate-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:grid">
+                  <div className="hidden grid-cols-[1.3fr_1fr_0.7fr_0.8fr_0.8fr_1fr] gap-4 bg-slate-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:grid">
                     <span>Task</span>
                     <span>Project</span>
                     <span>Priority</span>
                     <span>Status</span>
                     <span>Due date</span>
-                    <span>Action</span>
+                    <span>Actions</span>
                   </div>
                   <div className="divide-y divide-slate-200">
                     {filteredTasks.map((task) => {
                       const nextStatus = getNextStatus(task.status)
+                      const taskComments = commentsByTask[task.id] || []
+                      const isExpanded = expandedTaskId === task.id
+
                       return (
-                        <article key={task.id} className="grid gap-4 px-5 py-5 lg:grid-cols-[1.4fr_1fr_0.7fr_0.8fr_0.8fr_0.8fr] lg:items-center">
-                          <div>
-                            <p className="font-semibold text-slate-950">{task.title || 'Untitled task'}</p>
-                            <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-500">{task.description || 'No description provided.'}</p>
-                          </div>
-                          <p className="text-sm text-slate-600">{projectById[Number(task.project_id)]?.name || 'No project'}</p>
-                          <span className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ring-1 ${priorityClasses[task.priority] || 'bg-slate-100 text-slate-600 ring-slate-200'}`}>
-                            {priorityLabels[task.priority] || 'Medium'}
-                          </span>
-                          <span className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ring-1 ${statusClasses[task.status] || 'bg-slate-100 text-slate-600 ring-slate-200'}`}>
-                            {statusLabels[task.status] || 'Pending'}
-                          </span>
-                          <p className={`text-sm ${isOverdue(task) ? 'font-semibold text-rose-600' : 'text-slate-600'}`}>{formatDate(task.due_date)}</p>
-                          <button
-                            type="button"
-                            disabled={!nextStatus || updatingTaskId === task.id}
-                            onClick={() => handleStatusAdvance(task)}
-                            className="inline-flex w-fit items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-                          >
-                            {updatingTaskId === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleDot className="h-4 w-4" />}
-                            {nextStatus ? statusLabels[nextStatus] : 'Done'}
-                          </button>
-                        </article>
+                        <div key={task.id}>
+                          <article className="grid gap-4 px-5 py-5 lg:grid-cols-[1.3fr_1fr_0.7fr_0.8fr_0.8fr_1fr] lg:items-center">
+                            <div>
+                              <p className="font-semibold text-slate-950">{task.title || 'Untitled task'}</p>
+                              <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-500">{task.description || 'No description provided.'}</p>
+                            </div>
+                            <p className="text-sm text-slate-600">{projectById[Number(task.project_id)]?.name || 'No project'}</p>
+                            <span className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ring-1 ${priorityClasses[task.priority] || 'bg-slate-100 text-slate-600 ring-slate-200'}`}>
+                              {priorityLabels[task.priority] || 'Medium'}
+                            </span>
+                            <span className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ring-1 ${statusClasses[task.status] || 'bg-slate-100 text-slate-600 ring-slate-200'}`}>
+                              {statusLabels[task.status] || 'To Do'}
+                            </span>
+                            <p className={`text-sm ${isOverdue(task) ? 'font-semibold text-rose-600' : 'text-slate-600'}`}>{formatDate(task.due_date)}</p>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                disabled={!nextStatus || updatingTaskId === task.id}
+                                onClick={() => handleStatusAdvance(task)}
+                                className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+                              >
+                                {updatingTaskId === task.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleDot className="h-4 w-4" />}
+                                {nextStatus ? statusLabels[nextStatus] : 'Completed'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleComments(task.id)}
+                                className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                                {isExpanded ? 'Hide' : 'Comments'}
+                              </button>
+                            </div>
+                          </article>
+
+                          {isExpanded && (
+                            <div className="border-t border-slate-200 bg-slate-50 px-5 py-4">
+                              {commentLoadingId === task.id ? (
+                                <div className="flex items-center gap-2 text-sm text-slate-500">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  Loading comments...
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="space-y-3">
+                                    {taskComments.length === 0 ? (
+                                      <p className="text-sm text-slate-500">No comments yet. Start the discussion for this task.</p>
+                                    ) : (
+                                      taskComments.map((comment) => (
+                                        <div key={comment.id} className="rounded-2xl border border-slate-200 bg-white p-3">
+                                          <p className="text-sm text-slate-800">{comment.comment}</p>
+                                          <p className="mt-2 text-xs text-slate-500">
+                                            {formatCommentAuthor(comment, currentUser?.id)}
+                                          </p>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                                    <input
+                                      type="text"
+                                      value={commentDrafts[task.id] || ''}
+                                      onChange={(event) => handleCommentChange(task.id, event.target.value)}
+                                      placeholder="Write a comment for your manager or team..."
+                                      className="flex-1 rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-500"
+                                    />
+                                    <button
+                                      type="button"
+                                      disabled={savingCommentId === task.id}
+                                      onClick={() => handleAddComment(task.id)}
+                                      className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                                    >
+                                      {savingCommentId === task.id ? 'Saving...' : 'Add comment'}
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       )
                     })}
                   </div>
@@ -656,7 +566,7 @@ export default function EmployeeHome() {
 
             <aside className="space-y-6">
               <section id="deadlines" className="rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-xl">
-                <h2 className="text-2xl font-semibold text-white">Today's Work</h2>
+                <h2 className="text-2xl font-semibold text-white">Today's work</h2>
                 <div className="mt-5 space-y-4">
                   <DeadlineList title="Due today" tasks={deadlineGroups.today} empty="No tasks due today." projectById={projectById} />
                   <DeadlineList title="Upcoming deadlines" tasks={deadlineGroups.upcoming.slice(0, 4)} empty="No upcoming deadlines." projectById={projectById} />
@@ -665,10 +575,11 @@ export default function EmployeeHome() {
               </section>
 
               <section id="notifications" className="rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-xl">
-                <h2 className="text-2xl font-semibold text-white">Notifications</h2>
+                <h2 className="text-2xl font-semibold text-white">Work updates</h2>
+                <p className="mt-1 text-sm text-slate-400">Reminders built from your current assignments and due dates.</p>
                 <div className="mt-5 space-y-3">
                   {notifications.length === 0 ? (
-                    <p className="rounded-3xl bg-slate-950/70 p-4 text-sm text-slate-400">You have no new notifications.</p>
+                    <p className="rounded-3xl bg-slate-950/70 p-4 text-sm text-slate-400">You have no active reminders right now.</p>
                   ) : (
                     notifications.map((item) => (
                       <div key={item.id} className="rounded-3xl bg-slate-950/70 p-4 ring-1 ring-white/10">
@@ -685,7 +596,7 @@ export default function EmployeeHome() {
           <section id="projects" className="rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-xl">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className="text-2xl font-semibold text-white">Project Preview</h2>
+                <h2 className="text-2xl font-semibold text-white">Project preview</h2>
                 <p className="mt-1 text-sm text-slate-400">Projects connected to your assigned tasks.</p>
               </div>
               <p className="text-sm text-slate-400">{projectSummaries.length} project{projectSummaries.length === 1 ? '' : 's'}</p>
@@ -693,7 +604,7 @@ export default function EmployeeHome() {
 
             {projectSummaries.length === 0 ? (
               <div className="mt-6 rounded-3xl border border-dashed border-slate-700 bg-slate-950/70 p-8 text-center text-slate-400">
-                No project memberships found yet.
+                No project assignments found yet.
               </div>
             ) : (
               <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -746,7 +657,6 @@ function DeadlineList({ title, tasks, empty, projectById, danger = false }) {
             </div>
           ))
         )}
->>>>>>> 851624ef2b4385542fa6fa3c33d1fef898cb6b3a
       </div>
     </div>
   )

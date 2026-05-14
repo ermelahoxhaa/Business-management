@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize'
 import sequelize from '../config/database.js'
+import User from './User.js'
 
 const TaskComment = sequelize.define('TaskComment', {
   id: {
@@ -70,5 +71,7 @@ const TaskComment = sequelize.define('TaskComment', {
     }
   ]
 })
+
+TaskComment.belongsTo(User, { foreignKey: 'user_id' })
 
 export default TaskComment

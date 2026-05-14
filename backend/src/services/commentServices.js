@@ -4,16 +4,26 @@ import {
   updateComment,
   deleteComment
 } from '../repositories/commentRepository.js'
+import { getTaskById } from '../repositories/taskRepository.js'
 
-export const createCommentService = async ({ task_id, user_id, comment, created_by }) => {
+export const createCommentService = async ({ task_id, user_id, comment, created_by, role }) => {
   if (!comment || !comment.toString().trim()) {
     throw new Error('Comment text is required')
+  }
+
+  const task = await getTaskById(task_id)
+  if (!task) {
+    throw new Error('Task not found')
+  }
+
+  if (role === 'employee' && Number(task.assigned_to) !== Number(user_id)) {
+    throw new Error('You can comment only on tasks assigned to you')
   }
 
   return createComment({
     task_id,
     user_id,
-    comment,
+    comment: comment.toString().trim(),
     created_by
   })
 }
