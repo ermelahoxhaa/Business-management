@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { getProjects, getTasks, createProject, updateProject, deleteProject, getUsers } from '../services/api'
 import { getUserRole, getCurrentUser } from '../services/auth'
+import ListSearchPanel from '../components/ListSearchPanel'
+import { buildQueryParams, unwrapList } from '../utils/listResponse'
 
 export default function Projects() {
   const userRole = getUserRole()
@@ -23,11 +25,16 @@ export default function Projects() {
     description: ''
   })
   const [saving, setSaving] = useState(false)
+  const [listMeta, setListMeta] = useState({ total: 0, page: 1, totalPages: 1 })
+  const emptySearch = { search: '', sort: 'created_at', order: 'desc' }
+  const [searchQuery, setSearchQuery] = useState(emptySearch)
 
-  const loadProjects = async () => {
+  const loadProjects = async (query = searchQuery) => {
     try {
-      const response = await getProjects()
-      setProjects(response.data)
+      const response = await getProjects(buildQueryParams({ ...query, limit: 100 }))
+      const { items, meta } = unwrapList(response)
+      setProjects(items)
+      setListMeta(meta)
     } catch (err) {
       console.error('Error loading projects:', err)
       alert(err.response?.data?.message || 'Unable to load projects')
@@ -45,8 +52,8 @@ export default function Projects() {
 
   const loadTasks = async () => {
     try {
-      const response = await getTasks()
-      setTasks(response.data)
+      const response = await getTasks({ limit: 500 })
+      setTasks(unwrapList(response).items)
     } catch (err) {
       console.error(err)
     }
@@ -54,11 +61,21 @@ export default function Projects() {
 
   useEffect(() => {
     const loadData = async () => {
-      await Promise.all([loadProjects(), loadTasks(), loadUsers()])
+      await Promise.all([loadProjects(emptySearch), loadTasks(), loadUsers()])
       setLoading(false)
     }
     loadData()
   }, [])
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault()
+    loadProjects(searchQuery)
+  }
+
+  const handleSearchReset = () => {
+    setSearchQuery(emptySearch)
+    loadProjects(emptySearch)
+  }
 
   const getProjectStats = (projectId) => {
     const projectTasks = tasks.filter(task => task.project_id === projectId)
@@ -296,6 +313,23 @@ export default function Projects() {
           </section>
         )}
 
+
+        <ListSearchPanel
+          search={searchQuery.search}
+          onSearchChange={(value) => setSearchQuery((current) => ({ ...current, search: value }))}
+          onSubmit={handleSearchSubmit}
+          onReset={handleSearchReset}
+          sort={searchQuery.sort}
+          onSortChange={(value) => setSearchQuery((current) => ({ ...current, sort: value }))}
+          order={searchQuery.order}
+          onOrderChange={(value) => setSearchQuery((current) => ({ ...current, order: value }))}
+          sortOptions={[
+            { value: 'created_at', label: 'Created date' },
+            { value: 'name', label: 'Name' },
+            { value: 'updated_at', label: 'Updated date' }
+          ]}
+          resultMeta={listMeta}
+        />
 
         <section className="grid gap-6">
           {projects.length === 0 ? (

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { createComment, getComments, getMyEmployeeProfile, getMyProjects, getMyTasks, updateMyTaskStatus } from '../services/api'
+import { unwrapList } from '../utils/listResponse'
 import { getCurrentUser, getRoleLabel, logout } from '../services/auth'
 
 const statusLabels = {
@@ -125,7 +126,7 @@ export default function EmployeeHome() {
         getMyEmployeeProfile().catch(() => ({ data: null }))
       ])
 
-      setTasks(tasksResponse.data || [])
+      setTasks(unwrapList(tasksResponse).items)
       setProjects(projectsResponse.data || [])
       setProfile(profileResponse.data || null)
     } catch (err) {

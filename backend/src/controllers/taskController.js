@@ -1,6 +1,7 @@
 import {
   createTaskService,
-  getAllTasksService,
+  searchTasksService,
+  searchMyTasksService,
   getTaskByIdService,
   getTasksByAssignedUserService,
   getTasksByProjectService,
@@ -22,8 +23,8 @@ export const createTaskController = async (req, res) => {
 
 export const getAllTasksController = async (req, res) => {
   try {
-    const tasks = await getAllTasksService()
-    res.json(tasks)
+    const result = await searchTasksService(req.query, req.user)
+    res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })
   }
@@ -31,8 +32,8 @@ export const getAllTasksController = async (req, res) => {
 
 export const getMyTasksController = async (req, res) => {
   try {
-    const tasks = await getTasksByAssignedUserService(req.user.id)
-    res.json(tasks)
+    const result = await searchMyTasksService(req.user.id, req.query)
+    res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })
   }

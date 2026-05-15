@@ -1,6 +1,6 @@
 import {
   createEmployeeService,
-  getEmployeesService,
+  searchEmployeesService,
   getMyEmployeeProfileService,
   updateEmployeeService,
   updateEmployeeStatusService
@@ -17,14 +17,8 @@ export const getMyEmployeeProfileController = async (req, res) => {
 
 export const getEmployeesController = async (req, res) => {
   try {
-    const employees = await getEmployeesService({
-      search: req.query.search,
-      role: req.query.role,
-      department_id: req.query.department_id,
-      requesterRole: req.user.role,
-      requesterUserId: req.user.id
-    })
-    res.json(employees)
+    const result = await searchEmployeesService(req.query, req.user)
+    res.json(result)
   } catch (error) {
     res.status(400).json({ message: error.message })
   }

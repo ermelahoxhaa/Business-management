@@ -1,12 +1,12 @@
 import {
   createDepartmentService,
-  getDepartmentsService
+  searchDepartmentsService
 } from '../services/departmentService.js'
 
 export const getDepartmentsController = async (req, res) => {
   try {
-    const departments = await getDepartmentsService()
-    res.json(departments)
+    const result = await searchDepartmentsService(req.query)
+    res.json(result)
   } catch (error) {
     res.status(400).json({ message: error.message })
   }

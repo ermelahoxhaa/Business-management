@@ -2,9 +2,11 @@ import {
   createProject,
   getAllProjects,
   getProjectById,
+  searchProjects,
   updateProject,
   deleteProject
 } from '../repositories/projectRepository.js'
+import { parseListQuery, buildPaginatedResponse } from '../utils/queryParser.js'
 
 export const createProjectService = async ({ name, description, created_by }) => {
   if (!name || !name.toString().trim()) {
@@ -20,6 +22,26 @@ export const createProjectService = async ({ name, description, created_by }) =>
 
 export const getAllProjectsService = async () => {
   return getAllProjects()
+}
+
+export const searchProjectsService = async (query, requester) => {
+  const listQuery = parseListQuery(query, {
+    allowedSort: ['name', 'created_at', 'updated_at'],
+    defaultSort: 'created_at'
+  })
+
+  const createdBy = requester?.role === 'team_leader' ? requester.id : undefined
+
+  const { rows, count } = await searchProjects({
+    search: listQuery.search,
+    created_by: createdBy,
+    sort: listQuery.sort,
+    order: listQuery.order,
+    limit: listQuery.limit,
+    offset: listQuery.offset
+  })
+
+  return buildPaginatedResponse(rows, count, listQuery)
 }
 
 export const getProjectByIdService = async (id) => {

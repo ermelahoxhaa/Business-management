@@ -1,6 +1,7 @@
 import {
   createProjectService,
   getAllProjectsService,
+  searchProjectsService,
   getProjectByIdService,
   updateProjectService,
   deleteProjectService
@@ -21,8 +22,8 @@ export const createProjectController = async (req, res) => {
 
 export const getAllProjectsController = async (req, res) => {
   try {
-    const projects = await getAllProjectsService()
-    res.json(projects)
+    const result = await searchProjectsService(req.query, req.user)
+    res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })
   }

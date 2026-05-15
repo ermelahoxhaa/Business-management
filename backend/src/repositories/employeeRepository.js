@@ -43,13 +43,28 @@ export const getEmployeeByUserId = (userId) =>
     ]
   })
 
-export const getEmployees = async ({ search, role, departmentId, requesterRole, requesterUserId }) => {
+export const searchEmployees = async ({
+  search,
+  role,
+  departmentId,
+  employment_status,
+  sort,
+  order,
+  limit,
+  offset,
+  requesterRole,
+  requesterUserId
+}) => {
   const where = {}
   const userWhere = {}
   const roleWhere = role ? { name: role } : {}
 
   if (departmentId) {
     where.department_id = departmentId
+  }
+
+  if (employment_status) {
+    where.employment_status = employment_status
   }
 
   if (search) {
@@ -64,23 +79,37 @@ export const getEmployees = async ({ search, role, departmentId, requesterRole, 
   if (requesterRole === 'team_leader') {
     const requesterProfile = await getEmployeeByUserId(requesterUserId)
     if (!requesterProfile?.department_id) {
-      return []
+      return { rows: [], count: 0 }
     }
     where.department_id = requesterProfile.department_id
   }
 
-  return Employee.findAll({
+  const sortMap = {
+    created_at: ['created_at', order],
+    first_name: [{ model: User }, 'first_name', order],
+    last_name: [{ model: User }, 'last_name', order],
+    email: [{ model: User }, 'email', order],
+    department: [{ model: Department }, 'name', order]
+  }
+
+  const orderClause = sortMap[sort] || sortMap.created_at
+
+  return Employee.findAndCountAll({
     where,
     include: [
       {
         model: User,
         attributes: ['id', 'first_name', 'last_name', 'email', 'is_active'],
-        where: userWhere,
+        where: Object.keys(userWhere).length ? userWhere : undefined,
+        required: true,
         include: [{ model: Role, attributes: ['name'], where: roleWhere, through: { attributes: [] } }]
       },
-      { model: Department, attributes: ['id', 'name'] },
+      { model: Department, attributes: ['id', 'name'] }
     ],
-    order: [['created_at', 'DESC']]
+    order: [orderClause],
+    limit,
+    offset,
+    distinct: true
   })
 }
 

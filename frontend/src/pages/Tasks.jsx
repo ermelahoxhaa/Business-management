@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { createTask, deleteTask, getTasks, updateTask, getProjects, getUsers, getComments, createComment } from '../services/api'
 import { getCurrentUser, getUserRole } from '../services/auth'
+import ListSearchPanel from '../components/ListSearchPanel'
+import { buildQueryParams, unwrapList } from '../utils/listResponse'
 
 const statusOptions = [
   { value: 'todo', label: 'To Do' },
@@ -35,18 +37,38 @@ export default function Tasks() {
   const [users, setUsers] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [filters, setFilters] = useState({
-    projectId: '',
+  const [listMeta, setListMeta] = useState({ total: 0, page: 1, totalPages: 1 })
+  const [searchQuery, setSearchQuery] = useState({
+    search: '',
+    sort: 'created_at',
+    order: 'desc',
+    project_id: '',
     status: '',
-    assignedUser: ''
+    priority: '',
+    assigned_to: '',
+    due_from: '',
+    due_to: ''
   })
+  const emptySearch = {
+    search: '',
+    sort: 'created_at',
+    order: 'desc',
+    project_id: '',
+    status: '',
+    priority: '',
+    assigned_to: '',
+    due_from: '',
+    due_to: ''
+  }
   const [comments, setComments] = useState({}) // taskId: comments array
   const [commentForms, setCommentForms] = useState({}) // taskId: comment text
 
-  const loadTasks = async () => {
+  const loadTasks = async (query) => {
     try {
-      const response = await getTasks()
-      setTasks(response.data)
+      const response = await getTasks(buildQueryParams({ ...query, limit: 100 }))
+      const { items, meta } = unwrapList(response)
+      setTasks(items)
+      setListMeta(meta)
     } catch (err) {
       console.error(err)
       alert(err.response?.data?.message || 'Unable to load tasks')
@@ -55,8 +77,8 @@ export default function Tasks() {
 
   const loadProjects = async () => {
     try {
-      const response = await getProjects()
-      setProjects(response.data)
+      const response = await getProjects({ limit: 200 })
+      setProjects(unwrapList(response).items)
     } catch (err) {
       console.error(err)
       alert(err.response?.data?.message || 'Unable to load projects')
@@ -74,10 +96,20 @@ export default function Tasks() {
   }
 
   useEffect(() => {
-    loadTasks()
     loadProjects()
     loadUsers()
+    loadTasks(emptySearch)
   }, [])
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault()
+    loadTasks(searchQuery)
+  }
+
+  const handleSearchReset = () => {
+    setSearchQuery(emptySearch)
+    loadTasks(emptySearch)
+  }
 
   const resetForm = () => {
     setForm({
@@ -96,23 +128,10 @@ export default function Tasks() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const handleFilterChange = (e) => {
-    setFilters({ ...filters, [e.target.name]: e.target.value })
+  const handleSearchFieldChange = (event) => {
+    const { name, value } = event.target
+    setSearchQuery((current) => ({ ...current, [name]: value }))
   }
-
-  const roleBasedTasks = isTeamLeader
-    ? tasks.filter((task) => {
-        const taskProject = projects.find((project) => project.id === task.project_id)
-        return taskProject?.created_by === currentUser?.id
-      })
-    : tasks
-
-  const filteredTasks = roleBasedTasks.filter(task => {
-    if (filters.projectId && task.project_id !== Number(filters.projectId)) return false
-    if (filters.status && task.status !== filters.status) return false
-    if (filters.assignedUser && task.assigned_to !== Number(filters.assignedUser)) return false
-    return true
-  })
 
   const getProjectName = (projectId) => {
     const project = projects.find(p => p.id === projectId)
@@ -191,7 +210,7 @@ export default function Tasks() {
       }
 
       resetForm()
-      loadTasks()
+      loadTasks(searchQuery)
     } catch (err) {
       console.error(err)
       alert(err.response?.data?.message || 'Unable to save task')
@@ -429,16 +448,31 @@ export default function Tasks() {
         </section>
         )}
 
-        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
-          <h2 className="text-2xl font-semibold text-white mb-6">Filters</h2>
-
-          <div className="grid gap-4 sm:grid-cols-3">
+        <ListSearchPanel
+          search={searchQuery.search}
+          onSearchChange={(value) => setSearchQuery((current) => ({ ...current, search: value }))}
+          onSubmit={handleSearchSubmit}
+          onReset={handleSearchReset}
+          sort={searchQuery.sort}
+          onSortChange={(value) => setSearchQuery((current) => ({ ...current, sort: value }))}
+          order={searchQuery.order}
+          onOrderChange={(value) => setSearchQuery((current) => ({ ...current, order: value }))}
+          sortOptions={[
+            { value: 'created_at', label: 'Created date' },
+            { value: 'due_date', label: 'Due date' },
+            { value: 'title', label: 'Title' },
+            { value: 'status', label: 'Status' },
+            { value: 'priority', label: 'Priority' }
+          ]}
+          resultMeta={listMeta}
+        >
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-300">Project</label>
               <select
-                name="projectId"
-                value={filters.projectId}
-                onChange={handleFilterChange}
+                name="project_id"
+                value={searchQuery.project_id}
+                onChange={handleSearchFieldChange}
                 className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
               >
                 <option value="">All Projects</option>
@@ -448,19 +482,14 @@ export default function Tasks() {
                   </option>
                 ))}
               </select>
-              {filters.projectId && (
-                <p className="mt-2 text-sm text-slate-400">
-                  Progress: {getProjectProgress(filters.projectId)}%
-                </p>
-              )}
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-300">Status</label>
               <select
                 name="status"
-                value={filters.status}
-                onChange={handleFilterChange}
+                value={searchQuery.status}
+                onChange={handleSearchFieldChange}
                 className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
               >
                 <option value="">All Statuses</option>
@@ -473,14 +502,31 @@ export default function Tasks() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">Assigned User</label>
+              <label className="mb-2 block text-sm font-medium text-slate-300">Priority</label>
               <select
-                name="assignedUser"
-                value={filters.assignedUser}
-                onChange={handleFilterChange}
+                name="priority"
+                value={searchQuery.priority}
+                onChange={handleSearchFieldChange}
                 className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
               >
-                <option value="">All Users</option>
+                <option value="">All priorities</option>
+                {priorityOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">Assigned user</label>
+              <select
+                name="assigned_to"
+                value={searchQuery.assigned_to}
+                onChange={handleSearchFieldChange}
+                className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+              >
+                <option value="">All users</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {getUserName(user.id)}
@@ -488,17 +534,39 @@ export default function Tasks() {
                 ))}
               </select>
             </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">Due from</label>
+              <input
+                type="date"
+                name="due_from"
+                value={searchQuery.due_from}
+                onChange={handleSearchFieldChange}
+                className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">Due to</label>
+              <input
+                type="date"
+                name="due_to"
+                value={searchQuery.due_to}
+                onChange={handleSearchFieldChange}
+                className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+              />
+            </div>
           </div>
-        </section>
+        </ListSearchPanel>
 
         <section className="grid gap-6">
-          {filteredTasks.length === 0 ? (
+          {tasks.length === 0 ? (
             <div className="rounded-[2rem] border border-dashed border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400 shadow-xl">
               {isTeamLeader ? 'No tasks found for your projects yet.' : 'No tasks available yet.'}
             </div>
           ) : (
             <div className="grid gap-6">
-              {filteredTasks.map((task) => (
+              {tasks.map((task) => (
                 <div key={task.id} className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0 flex-1">

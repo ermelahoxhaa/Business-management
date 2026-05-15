@@ -10,6 +10,8 @@ import {
   updateEmployeeStatus
 } from '../services/api'
 import { getUserRole } from '../services/auth'
+import ListSearchPanel from '../components/ListSearchPanel'
+import { buildQueryParams, unwrapList } from '../utils/listResponse'
 
 const defaultForm = {
   first_name: '',
@@ -22,7 +24,8 @@ const defaultForm = {
   status: 'active'
 }
 
-const emptyFilters = { search: '', role: '', department_id: '' }
+const emptyFilters = { search: '', role: '', department_id: '', sort: 'created_at', order: 'desc' }
+const emptyDepartmentFilters = { search: '', sort: 'name', order: 'asc' }
 
 export default function EmployeeManagement() {
   const userRole = getUserRole()
@@ -33,6 +36,9 @@ export default function EmployeeManagement() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [filters, setFilters] = useState(emptyFilters)
+  const [employeeMeta, setEmployeeMeta] = useState({ total: 0, page: 1, totalPages: 1 })
+  const [departmentFilters, setDepartmentFilters] = useState(emptyDepartmentFilters)
+  const [departmentMeta, setDepartmentMeta] = useState({ total: 0, page: 1, totalPages: 1 })
   const [form, setForm] = useState(defaultForm)
   const [editId, setEditId] = useState(null)
   const [showForm, setShowForm] = useState(false)
@@ -43,18 +49,25 @@ export default function EmployeeManagement() {
     [departments]
   )
 
-  const loadDepartments = useCallback(async () => {
-    const response = await getDepartments()
-    setDepartments(response.data || [])
+  const loadDepartments = useCallback(async (activeFilters) => {
+    const response = await getDepartments(buildQueryParams({ ...activeFilters, limit: 100 }))
+    const { items, meta } = unwrapList(response)
+    setDepartments(items)
+    setDepartmentMeta(meta)
   }, [])
 
   const loadEmployees = useCallback(async (activeFilters) => {
-    const response = await getEmployees({
+    const response = await getEmployees(buildQueryParams({
       search: activeFilters.search || undefined,
       role: activeFilters.role || undefined,
-      department_id: activeFilters.department_id || undefined
-    })
-    setEmployees(response.data || [])
+      department_id: activeFilters.department_id || undefined,
+      sort: activeFilters.sort,
+      order: activeFilters.order,
+      limit: 100
+    }))
+    const { items, meta } = unwrapList(response)
+    setEmployees(items)
+    setEmployeeMeta(meta)
   }, [])
 
   const loadData = useCallback(async (activeFilters) => {
@@ -71,6 +84,7 @@ export default function EmployeeManagement() {
 
   useEffect(() => {
     loadData(emptyFilters)
+    loadDepartments(emptyDepartmentFilters)
   }, [loadData])
 
   const handleFilterChange = (e) => {
@@ -87,6 +101,26 @@ export default function EmployeeManagement() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleEmployeeSearchReset = async () => {
+    setFilters(emptyFilters)
+    setLoading(true)
+    try {
+      await loadEmployees(emptyFilters)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDepartmentSearchSubmit = async (event) => {
+    event.preventDefault()
+    await loadDepartments(departmentFilters)
+  }
+
+  const handleDepartmentSearchReset = async () => {
+    setDepartmentFilters(emptyDepartmentFilters)
+    await loadDepartments(emptyDepartmentFilters)
   }
 
   const resetForm = () => {
@@ -239,16 +273,25 @@ export default function EmployeeManagement() {
           ))}
         </section>
 
-        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
-          <h2 className="text-2xl font-semibold text-white mb-6">Filters</h2>
-          <form onSubmit={handleSearchSubmit} className="grid gap-4 md:grid-cols-4">
-            <input
-              name="search"
-              value={filters.search}
-              onChange={handleFilterChange}
-              placeholder="Search by name or email"
-              className="rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
-            />
+        <ListSearchPanel
+          search={filters.search}
+          onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
+          onSubmit={handleSearchSubmit}
+          onReset={handleEmployeeSearchReset}
+          sort={filters.sort}
+          onSortChange={(value) => setFilters((current) => ({ ...current, sort: value }))}
+          order={filters.order}
+          onOrderChange={(value) => setFilters((current) => ({ ...current, order: value }))}
+          sortOptions={[
+            { value: 'created_at', label: 'Created date' },
+            { value: 'first_name', label: 'First name' },
+            { value: 'last_name', label: 'Last name' },
+            { value: 'email', label: 'Email' },
+            { value: 'department', label: 'Department' }
+          ]}
+          resultMeta={employeeMeta}
+        >
+          <div className="grid gap-4 md:grid-cols-2">
             <select
               name="role"
               value={filters.role}
@@ -257,7 +300,7 @@ export default function EmployeeManagement() {
             >
               <option value="">All roles</option>
               <option value="employee">Employee</option>
-              <option value="team_leader">Team Leader</option>
+              <option value="team_leader">Manager</option>
             </select>
             <select
               name="department_id"
@@ -272,14 +315,41 @@ export default function EmployeeManagement() {
                 </option>
               ))}
             </select>
-            <button
-              type="submit"
-              className="rounded-3xl bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
-            >
-              Apply Filters
-            </button>
-          </form>
-        </section>
+          </div>
+        </ListSearchPanel>
+
+        <ListSearchPanel
+          search={departmentFilters.search}
+          onSearchChange={(value) => setDepartmentFilters((current) => ({ ...current, search: value }))}
+          onSubmit={handleDepartmentSearchSubmit}
+          onReset={handleDepartmentSearchReset}
+          sort={departmentFilters.sort}
+          onSortChange={(value) => setDepartmentFilters((current) => ({ ...current, sort: value }))}
+          order={departmentFilters.order}
+          onOrderChange={(value) => setDepartmentFilters((current) => ({ ...current, order: value }))}
+          sortOptions={[
+            { value: 'name', label: 'Name' },
+            { value: 'created_at', label: 'Created date' },
+            { value: 'employee_count', label: 'Team size' }
+          ]}
+          resultMeta={departmentMeta}
+        />
+
+        {departments.length > 0 && (
+          <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+            <h2 className="mb-4 text-xl font-semibold text-white">Departments</h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {departments.map((department) => (
+                <div key={department.id} className="rounded-2xl bg-slate-950/70 p-4 ring-1 ring-white/10">
+                  <p className="font-semibold text-white">{department.name}</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {department.employee_count ?? 0} team member{(department.employee_count ?? 0) === 1 ? '' : 's'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {isAdmin && (
         <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">

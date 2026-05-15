@@ -5,7 +5,6 @@ const API = axios.create({
   baseURL: 'http://localhost:5000/api',
 })
 
-// Add token to requests
 API.interceptors.request.use((config) => {
   const token = getToken()
   if (token) {
@@ -18,14 +17,14 @@ export const signupUser = (data) => API.post('/auth/signup', data)
 
 export const loginUser = (data) => API.post('/auth/login', data)
 
-export const getTasks = () => API.get('/tasks')
-export const getMyTasks = () => API.get('/tasks/my-tasks')
+export const getTasks = (params) => API.get('/tasks', { params })
+export const getMyTasks = (params) => API.get('/tasks/my-tasks', { params })
 export const createTask = (data) => API.post('/tasks', data)
 export const updateTask = (id, data) => API.put(`/tasks/${id}`, data)
 export const updateMyTaskStatus = (id, status) => API.patch(`/tasks/${id}/status`, { status })
 export const deleteTask = (id) => API.delete(`/tasks/${id}`)
 
-export const getProjects = () => API.get('/projects')
+export const getProjects = (params) => API.get('/projects', { params })
 export const getMyProjects = () => API.get('/projects/my-projects')
 export const createProject = (data) => API.post('/projects', data)
 export const updateProject = (id, data) => API.put(`/projects/${id}`, data)
@@ -36,7 +35,7 @@ export const getUsers = () => API.get('/auth/users')
 export const getComments = (taskId) => API.get(`/comments/task/${taskId}`)
 export const createComment = (data) => API.post('/comments', data)
 
-export const getDepartments = () => API.get('/departments')
+export const getDepartments = (params) => API.get('/departments', { params })
 export const createDepartment = (data) => API.post('/departments', data)
 
 export const getMyEmployeeProfile = () => API.get('/employees/me')
@@ -45,3 +44,4 @@ export const getEmployees = (params) => API.get('/employees', { params })
 export const createEmployee = (data) => API.post('/employees', data)
 export const updateEmployee = (id, data) => API.put(`/employees/${id}`, data)
 export const updateEmployeeStatus = (id, status) => API.patch(`/employees/${id}/status`, { status })
+

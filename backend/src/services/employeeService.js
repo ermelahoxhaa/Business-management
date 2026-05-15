@@ -5,12 +5,13 @@ import {
   findUserByEmail,
   getEmployeeById,
   getEmployeeByUserId,
-  getEmployees,
+  searchEmployees,
   getRoleByName,
   updateEmployee,
   updateUser,
   upsertUserRole
 } from '../repositories/employeeRepository.js'
+import { parseListQuery, buildPaginatedResponse } from '../utils/queryParser.js'
 
 const isStrongPassword = (password) =>
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(password)
@@ -43,21 +44,26 @@ export const getMyEmployeeProfileService = async (userId) => {
   return mapEmployee(profile)
 }
 
-export const getEmployeesService = async ({
-  search,
-  role,
-  department_id,
-  requesterRole,
-  requesterUserId
-}) => {
-  const list = await getEmployees({
-    search,
-    role,
-    departmentId: department_id ? Number(department_id) : undefined,
-    requesterRole,
-    requesterUserId
+export const searchEmployeesService = async (query, requester) => {
+  const listQuery = parseListQuery(query, {
+    allowedSort: ['created_at', 'first_name', 'last_name', 'email', 'department'],
+    defaultSort: 'created_at'
   })
-  return list.map(mapEmployee)
+
+  const { rows, count } = await searchEmployees({
+    search: listQuery.search,
+    role: query.role,
+    departmentId: query.department_id ? Number(query.department_id) : undefined,
+    employment_status: query.employment_status,
+    sort: listQuery.sort,
+    order: listQuery.order,
+    limit: listQuery.limit,
+    offset: listQuery.offset,
+    requesterRole: requester?.role,
+    requesterUserId: requester?.id
+  })
+
+  return buildPaginatedResponse(rows.map(mapEmployee), count, listQuery)
 }
 
 export const createEmployeeService = async ({

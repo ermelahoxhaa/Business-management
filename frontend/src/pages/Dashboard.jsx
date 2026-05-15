@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getProjects, getTasks } from '../services/api'
+import { unwrapList } from '../utils/listResponse'
 import { logout, getUserRole } from '../services/auth'
 
 const statusLabels = {
@@ -26,9 +27,12 @@ export default function Dashboard() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [projectsRes, tasksRes] = await Promise.all([getProjects(), getTasks()])
-        setProjects(projectsRes.data || [])
-        setTasks(tasksRes.data || [])
+        const [projectsRes, tasksRes] = await Promise.all([
+          getProjects({ limit: 500 }),
+          getTasks({ limit: 500 })
+        ])
+        setProjects(unwrapList(projectsRes).items)
+        setTasks(unwrapList(tasksRes).items)
         setRole(getUserRole())
       } catch (err) {
         console.error(err)

@@ -1,11 +1,26 @@
 import {
   createDepartment,
   findDepartmentByName,
-  getAllDepartments
+  searchDepartments
 } from '../repositories/departmentRepository.js'
+import { parseListQuery, buildPaginatedResponse } from '../utils/queryParser.js'
 
-export const getDepartmentsService = async () => {
-  return getAllDepartments()
+export const searchDepartmentsService = async (query) => {
+  const listQuery = parseListQuery(query, {
+    allowedSort: ['name', 'created_at', 'employee_count'],
+    defaultSort: 'name',
+    defaultOrder: 'ASC'
+  })
+
+  const { rows, count } = await searchDepartments({
+    search: listQuery.search,
+    sort: listQuery.sort,
+    order: listQuery.order,
+    limit: listQuery.limit,
+    offset: listQuery.offset
+  })
+
+  return buildPaginatedResponse(rows, count, listQuery)
 }
 
 export const createDepartmentService = async ({ name, description, created_by }) => {

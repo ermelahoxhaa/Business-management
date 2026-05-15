@@ -1,12 +1,13 @@
 import {
   createTask,
-  getAllTasks,
   getTaskById,
   getTasksByProject,
   getTasksByAssignedUser,
+  searchTasks,
   updateTask,
   deleteTask
 } from '../repositories/taskRepository.js'
+import { parseListQuery, buildPaginatedResponse } from '../utils/queryParser.js'
 
 const validStatuses = ['todo', 'in_progress', 'done']
 const validPriorities = ['low', 'medium', 'high']
@@ -63,8 +64,53 @@ export const createTaskService = async ({ title, description, status, priority, 
   })
 }
 
-export const getAllTasksService = async () => {
-  return getAllTasks()
+export const searchTasksService = async (query, requester) => {
+  const listQuery = parseListQuery(query, {
+    allowedSort: ['title', 'status', 'priority', 'due_date', 'created_at', 'updated_at'],
+    defaultSort: 'created_at'
+  })
+
+  const managerUserId = requester?.role === 'team_leader' ? requester.id : null
+
+  const { rows, count } = await searchTasks({
+    search: listQuery.search,
+    status: query.status,
+    priority: query.priority,
+    project_id: query.project_id ? Number(query.project_id) : undefined,
+    assigned_to: query.assigned_to ? Number(query.assigned_to) : undefined,
+    due_from: query.due_from,
+    due_to: query.due_to,
+    sort: listQuery.sort,
+    order: listQuery.order,
+    limit: listQuery.limit,
+    offset: listQuery.offset,
+    managerUserId
+  })
+
+  return buildPaginatedResponse(rows, count, listQuery)
+}
+
+export const searchMyTasksService = async (userId, query) => {
+  const listQuery = parseListQuery(query, {
+    allowedSort: ['title', 'status', 'priority', 'due_date', 'created_at'],
+    defaultSort: 'due_date',
+    defaultOrder: 'ASC'
+  })
+
+  const { rows, count } = await searchTasks({
+    search: listQuery.search,
+    status: query.status,
+    priority: query.priority,
+    assigned_to: userId,
+    due_from: query.due_from,
+    due_to: query.due_to,
+    sort: listQuery.sort,
+    order: listQuery.order,
+    limit: listQuery.limit,
+    offset: listQuery.offset
+  })
+
+  return buildPaginatedResponse(rows, count, listQuery)
 }
 
 export const getTaskByIdService = async (id) => {
