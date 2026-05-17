@@ -45,3 +45,17 @@ export const createEmployee = (data) => API.post('/employees', data)
 export const updateEmployee = (id, data) => API.put(`/employees/${id}`, data)
 export const updateEmployeeStatus = (id, status) => API.patch(`/employees/${id}/status`, { status })
 
+export const exportEntityData = (entity, format, params) =>
+  API.get(`/data-transfer/${entity}/export`, {
+    params: { format, ...params },
+    responseType: 'blob'
+  })
+
+export const importEntityData = (entity, file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return API.post(`/data-transfer/${entity}/import`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+

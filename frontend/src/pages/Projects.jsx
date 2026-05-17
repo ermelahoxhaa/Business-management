@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { getProjects, getTasks, createProject, updateProject, deleteProject, getUsers } from '../services/api'
 import { getUserRole, getCurrentUser } from '../services/auth'
 import ListSearchPanel from '../components/ListSearchPanel'
+import DataTransferBar from '../components/DataTransferBar'
 import { buildQueryParams, unwrapList } from '../utils/listResponse'
 
 export default function Projects() {
@@ -329,6 +330,15 @@ export default function Projects() {
             { value: 'updated_at', label: 'Updated date' }
           ]}
           resultMeta={listMeta}
+        />
+
+        <DataTransferBar
+          entity="projects"
+          filters={buildQueryParams(searchQuery)}
+          onImported={() => {
+            loadProjects(searchQuery)
+            loadTasks()
+          }}
         />
 
         <section className="grid gap-6">

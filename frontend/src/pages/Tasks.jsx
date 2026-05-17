@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { createTask, deleteTask, getTasks, updateTask, getProjects, getUsers, getComments, createComment } from '../services/api'
 import { getCurrentUser, getUserRole } from '../services/auth'
 import ListSearchPanel from '../components/ListSearchPanel'
+import DataTransferBar from '../components/DataTransferBar'
 import { buildQueryParams, unwrapList } from '../utils/listResponse'
 
 const statusOptions = [
@@ -558,6 +559,12 @@ export default function Tasks() {
             </div>
           </div>
         </ListSearchPanel>
+
+        <DataTransferBar
+          entity="tasks"
+          filters={buildQueryParams(searchQuery)}
+          onImported={() => loadTasks(searchQuery)}
+        />
 
         <section className="grid gap-6">
           {tasks.length === 0 ? (

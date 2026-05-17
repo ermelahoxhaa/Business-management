@@ -28,6 +28,7 @@ import projectRoutes from './routes/projectRoutes.js'
 import commentRoutes from './routes/commentRoutes.js'
 import departmentRoutes from './routes/departmentRoutes.js'
 import employeeRoutes from './routes/employeeRoutes.js'
+import dataTransferRoutes from './routes/dataTransferRoutes.js'
 
 app.use('/api/auth', authRoutes)
 app.use('/api/tasks', taskRoutes)
@@ -35,5 +36,6 @@ app.use('/api/projects', projectRoutes)
 app.use('/api/comments', commentRoutes)
 app.use('/api/departments', departmentRoutes)
 app.use('/api/employees', employeeRoutes)
+app.use('/api/data-transfer', dataTransferRoutes)
 
 export default app

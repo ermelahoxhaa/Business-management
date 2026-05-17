@@ -11,6 +11,7 @@ import {
 } from '../services/api'
 import { getUserRole } from '../services/auth'
 import ListSearchPanel from '../components/ListSearchPanel'
+import DataTransferBar from '../components/DataTransferBar'
 import { buildQueryParams, unwrapList } from '../utils/listResponse'
 
 const defaultForm = {
@@ -318,6 +319,13 @@ export default function EmployeeManagement() {
           </div>
         </ListSearchPanel>
 
+        <DataTransferBar
+          entity="employees"
+          filters={buildQueryParams(filters)}
+          canImport={isAdmin}
+          onImported={() => loadEmployees(filters)}
+        />
+
         <ListSearchPanel
           search={departmentFilters.search}
           onSearchChange={(value) => setDepartmentFilters((current) => ({ ...current, search: value }))}
@@ -333,6 +341,13 @@ export default function EmployeeManagement() {
             { value: 'employee_count', label: 'Team size' }
           ]}
           resultMeta={departmentMeta}
+        />
+
+        <DataTransferBar
+          entity="departments"
+          filters={buildQueryParams(departmentFilters)}
+          canImport={isAdmin}
+          onImported={() => loadDepartments(departmentFilters)}
         />
 
         {departments.length > 0 && (
