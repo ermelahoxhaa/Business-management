@@ -59,3 +59,14 @@ export const importEntityData = (entity, file) => {
   })
 }
 
+export const getReportTypes = () => API.get('/reports/types')
+
+export const previewReport = (type, params) =>
+  API.get(`/reports/${type}/preview`, { params })
+
+export const exportReport = (type, format, params) =>
+  API.get(`/reports/${type}/export`, {
+    params: { format, ...params },
+    responseType: 'blob'
+  })
+

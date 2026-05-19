@@ -151,6 +151,7 @@ export default function Dashboard() {
                 { label: 'Dashboard Overview', icon: '📊', path: '/dashboard' },
                 { label: 'Projects', icon: '📁', path: '/projects' },
                 { label: 'Tasks', icon: '✅', path: '/tasks' },
+                { label: 'Reports', icon: '📈', path: '/reports' },
                 { label: 'Employees', icon: '👥', path: '/employees' },
                 { label: 'Settings', icon: '⚙️', path: '/settings' }
               ].map((item) => (
