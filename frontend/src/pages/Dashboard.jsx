@@ -145,6 +145,7 @@ export default function Dashboard() {
             <nav className="space-y-3">
               {[
                 { label: 'Dashboard Overview', icon: '📊', path: '/dashboard' },
+                { label: 'Client Management', icon: '🏠', path: '/client' },
                 { label: 'Projects', icon: '📁', path: '/projects' },
                 { label: 'Tasks', icon: '✅', path: '/tasks' },
                 { label: 'Employees', icon: '👥', path: '/employees' },
