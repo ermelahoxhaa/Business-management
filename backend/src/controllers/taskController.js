@@ -14,7 +14,7 @@ export const createTaskController = async (req, res) => {
     const task = await createTaskService({
       ...req.body,
       created_by: req.user.id
-    })
+    }, req.user)
     res.status(201).json(task)
   } catch (err) {
     res.status(400).json({ message: err.message })
@@ -100,7 +100,7 @@ export const updateTaskController = async (req, res) => {
     const result = await updateTaskService(req.params.id, {
       ...req.body,
       updated_by: req.user.id
-    })
+    }, req.user)
     res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })
@@ -109,7 +109,7 @@ export const updateTaskController = async (req, res) => {
 
 export const deleteTaskController = async (req, res) => {
   try {
-    const result = await deleteTaskService(req.params.id)
+    const result = await deleteTaskService(req.params.id, req.user)
     res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })

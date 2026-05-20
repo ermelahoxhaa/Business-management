@@ -26,3 +26,18 @@ export const buildPaginatedResponse = (rows, total, { page, limit }) => ({
     totalPages: total > 0 ? Math.ceil(total / limit) : 0
   }
 })
+
+export const fetchAllPages = async (searchFn, query = {}, requester, pageSize = 500) => {
+  const rows = []
+  let page = 1
+  let totalPages = 1
+
+  do {
+    const result = await searchFn({ ...query, page, limit: pageSize }, requester)
+    rows.push(...(result.data || []))
+    totalPages = result.meta?.totalPages || 1
+    page += 1
+  } while (page <= totalPages)
+
+  return rows
+}

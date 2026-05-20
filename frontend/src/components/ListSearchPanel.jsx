@@ -1,4 +1,4 @@
-import { Search, RotateCcw } from 'lucide-react'
+import { Search, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function ListSearchPanel({
   search,
@@ -11,8 +11,13 @@ export default function ListSearchPanel({
   onOrderChange,
   sortOptions = [],
   children,
-  resultMeta
+  resultMeta,
+  page = 1,
+  onPageChange
 }) {
+  const totalPages = resultMeta?.totalPages || 1
+  const showPagination = totalPages > 1 && typeof onPageChange === 'function'
+
   return (
     <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
       <form onSubmit={onSubmit} className="space-y-4">
@@ -72,12 +77,37 @@ export default function ListSearchPanel({
 
         {children}
 
-        {resultMeta?.total !== undefined && (
-          <p className="text-sm text-slate-400">
-            Showing {resultMeta.total} result{resultMeta.total === 1 ? '' : 's'}
-            {resultMeta.totalPages > 1 ? ` · page ${resultMeta.page} of ${resultMeta.totalPages}` : ''}
-          </p>
-        )}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {resultMeta?.total !== undefined && (
+            <p className="text-sm text-slate-400">
+              Showing {resultMeta.total} result{resultMeta.total === 1 ? '' : 's'}
+              {totalPages > 1 ? ` · page ${page} of ${totalPages}` : ''}
+            </p>
+          )}
+
+          {showPagination && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => onPageChange(page - 1)}
+                className="inline-flex items-center gap-1 rounded-2xl border border-slate-700 px-3 py-2 text-sm text-slate-200 transition hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </button>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => onPageChange(page + 1)}
+                className="inline-flex items-center gap-1 rounded-2xl border border-slate-700 px-3 py-2 text-sm text-slate-200 transition hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </form>
     </section>
   )

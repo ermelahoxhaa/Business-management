@@ -15,15 +15,15 @@ import { requireAuth, requireRoles } from '../middleware/authMiddleware.js'
 const router = express.Router()
 
 router.use(requireAuth)
-router.post('/', createTaskController)
-router.get('/', getAllTasksController)
 router.get('/my-tasks', requireRoles(['employee']), getMyTasksController)
-router.get('/project/:projectId', getTasksByProjectController)
-router.get('/user/:userId', getTasksByAssignedUserController)
-router.get('/:id', getTaskByIdController)
 router.patch('/:id/status', requireRoles(['employee']), updateMyTaskStatusController)
-router.put('/:id', updateTaskController)
-router.delete('/:id', deleteTaskController)
+router.get('/', requireRoles(['admin', 'team_leader']), getAllTasksController)
+router.post('/', requireRoles(['admin', 'team_leader']), createTaskController)
+router.get('/project/:projectId', requireRoles(['admin', 'team_leader']), getTasksByProjectController)
+router.get('/user/:userId', requireRoles(['admin', 'team_leader']), getTasksByAssignedUserController)
+router.get('/:id', requireRoles(['admin', 'team_leader']), getTaskByIdController)
+router.put('/:id', requireRoles(['admin', 'team_leader']), updateTaskController)
+router.delete('/:id', requireRoles(['admin', 'team_leader']), deleteTaskController)
 
 export default router
 

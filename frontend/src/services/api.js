@@ -40,6 +40,12 @@ export const createDepartment = (data) => API.post('/departments', data)
 
 export const getMyEmployeeProfile = () => API.get('/employees/me')
 
+export const getClients = (params) => API.get('/clients', { params })
+export const getClient = (id) => API.get(`/clients/${id}`)
+export const createClient = (data) => API.post('/clients', data)
+export const updateClient = (id, data) => API.put(`/clients/${id}`, data)
+export const deleteClient = (id) => API.delete(`/clients/${id}`)
+
 export const getEmployees = (params) => API.get('/employees', { params })
 export const createEmployee = (data) => API.post('/employees', data)
 export const updateEmployee = (id, data) => API.put(`/employees/${id}`, data)

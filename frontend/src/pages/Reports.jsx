@@ -94,6 +94,9 @@ export default function Reports() {
   }
 
   const selectedMeta = reportTypes.find((item) => item.id === selectedType)
+  const showTaskFilters = ['task_summary', 'overdue_tasks', 'project_progress', 'employee_workload'].includes(selectedType)
+  const showDepartmentFilter = selectedType === 'employee_workload'
+  const showClientStatusFilter = selectedType === 'client_directory'
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-slate-950 px-4 py-10 text-slate-100 sm:px-6">
@@ -134,50 +137,66 @@ export default function Reports() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <label className="mb-2 block text-sm text-slate-300">Date from</label>
-                <input type="date" name="date_from" value={filters.date_from} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white" />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm text-slate-300">Date to</label>
-                <input type="date" name="date_to" value={filters.date_to} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white" />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm text-slate-300">Status</label>
-                <select name="status" value={filters.status} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white">
-                  <option value="">All</option>
-                  <option value="todo">To Do</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="done">Completed</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-2 block text-sm text-slate-300">Priority</label>
-                <select name="priority" value={filters.priority} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white">
-                  <option value="">All</option>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-2 block text-sm text-slate-300">Project</label>
-                <select name="project_id" value={filters.project_id} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white">
-                  <option value="">All</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>{project.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-2 block text-sm text-slate-300">Department</label>
-                <select name="department_id" value={filters.department_id} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white">
-                  <option value="">All</option>
-                  {departments.map((department) => (
-                    <option key={department.id} value={department.id}>{department.name}</option>
-                  ))}
-                </select>
-              </div>
+              {showTaskFilters && (
+                <>
+                  <div>
+                    <label className="mb-2 block text-sm text-slate-300">Date from</label>
+                    <input type="date" name="date_from" value={filters.date_from} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white" />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-slate-300">Date to</label>
+                    <input type="date" name="date_to" value={filters.date_to} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white" />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-slate-300">Task status</label>
+                    <select name="status" value={filters.status} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white">
+                      <option value="">All</option>
+                      <option value="todo">To Do</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="done">Completed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-slate-300">Priority</label>
+                    <select name="priority" value={filters.priority} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white">
+                      <option value="">All</option>
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-slate-300">Project</label>
+                    <select name="project_id" value={filters.project_id} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white">
+                      <option value="">All</option>
+                      {projects.map((project) => (
+                        <option key={project.id} value={project.id}>{project.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+              {showDepartmentFilter && (
+                <div>
+                  <label className="mb-2 block text-sm text-slate-300">Department</label>
+                  <select name="department_id" value={filters.department_id} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white">
+                    <option value="">All</option>
+                    {departments.map((department) => (
+                      <option key={department.id} value={department.id}>{department.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {showClientStatusFilter && (
+                <div>
+                  <label className="mb-2 block text-sm text-slate-300">Client status</label>
+                  <select name="status" value={filters.status} onChange={handleFilterChange} className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white">
+                    <option value="">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <button

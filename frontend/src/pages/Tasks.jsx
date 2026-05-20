@@ -39,6 +39,7 @@ export default function Tasks() {
   const [editingId, setEditingId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [listMeta, setListMeta] = useState({ total: 0, page: 1, totalPages: 1 })
+  const [listPage, setListPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState({
     search: '',
     sort: 'created_at',
@@ -64,12 +65,13 @@ export default function Tasks() {
   const [comments, setComments] = useState({}) // taskId: comments array
   const [commentForms, setCommentForms] = useState({}) // taskId: comment text
 
-  const loadTasks = async (query) => {
+  const loadTasks = async (query, page = listPage) => {
     try {
-      const response = await getTasks(buildQueryParams({ ...query, limit: 100 }))
+      const response = await getTasks(buildQueryParams({ ...query, page, limit: 50 }))
       const { items, meta } = unwrapList(response)
       setTasks(items)
       setListMeta(meta)
+      setListPage(meta.page || page)
     } catch (err) {
       console.error(err)
       alert(err.response?.data?.message || 'Unable to load tasks')
@@ -104,12 +106,19 @@ export default function Tasks() {
 
   const handleSearchSubmit = (event) => {
     event.preventDefault()
-    loadTasks(searchQuery)
+    setListPage(1)
+    loadTasks(searchQuery, 1)
   }
 
   const handleSearchReset = () => {
     setSearchQuery(emptySearch)
-    loadTasks(emptySearch)
+    setListPage(1)
+    loadTasks(emptySearch, 1)
+  }
+
+  const handlePageChange = (nextPage) => {
+    setListPage(nextPage)
+    loadTasks(searchQuery, nextPage)
   }
 
   const resetForm = () => {
@@ -466,6 +475,8 @@ export default function Tasks() {
             { value: 'priority', label: 'Priority' }
           ]}
           resultMeta={listMeta}
+          page={listPage}
+          onPageChange={handlePageChange}
         >
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>

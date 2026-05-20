@@ -23,8 +23,7 @@ export const previewReportController = async (req, res) => {
 
 export const exportReportController = async (req, res) => {
   try {
-    const format = (req.query.format || 'xlsx').toLowerCase()
-    const { format: _ignored, ...filters } = req.query
+    const { format, ...filters } = req.query
     const file = await exportReportService(req.params.type, format, filters, req.user)
 
     res.setHeader('Content-Type', file.mimeType)

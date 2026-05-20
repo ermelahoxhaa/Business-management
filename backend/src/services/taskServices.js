@@ -7,10 +7,28 @@ import {
   updateTask,
   deleteTask
 } from '../repositories/taskRepository.js'
+import { getProjectById } from '../repositories/projectRepository.js'
 import { parseListQuery, buildPaginatedResponse } from '../utils/queryParser.js'
 
 const validStatuses = ['todo', 'in_progress', 'done']
 const validPriorities = ['low', 'medium', 'high']
+
+const assertProjectAccess = async (projectId, requester) => {
+  if (!requester || requester.role === 'admin') return
+
+  if (requester.role !== 'team_leader') {
+    throw new Error('You do not have access to this project')
+  }
+
+  const project = await getProjectById(projectId)
+  if (!project) {
+    throw new Error('Project not found')
+  }
+
+  if (Number(project.created_by) !== Number(requester.id)) {
+    throw new Error('You do not have access to this project')
+  }
+}
 
 const normalizeTaskPayload = ({ title, description, status, priority, dueDate, assigned_to, project_id, updated_by }) => {
   const taskData = {}
@@ -27,7 +45,10 @@ const normalizeTaskPayload = ({ title, description, status, priority, dueDate, a
   return taskData
 }
 
-export const createTaskService = async ({ title, description, status, priority, dueDate, created_by, assigned_to, project_id }) => {
+export const createTaskService = async (
+  { title, description, status, priority, dueDate, created_by, assigned_to, project_id },
+  requester
+) => {
   if (!title || !title.toString().trim()) {
     throw new Error('Title is required')
   }
@@ -70,12 +91,20 @@ export const searchTasksService = async (query, requester) => {
     defaultSort: 'created_at'
   })
 
+  if (query.status && !validStatuses.includes(query.status)) {
+    throw new Error('Invalid status. Allowed values: todo, in_progress, done')
+  }
+
+  if (query.priority && !validPriorities.includes(query.priority)) {
+    throw new Error('Invalid priority. Allowed values: low, medium, high')
+  }
+
   const managerUserId = requester?.role === 'team_leader' ? requester.id : null
 
   const { rows, count } = await searchTasks({
     search: listQuery.search,
-    status: query.status,
-    priority: query.priority,
+    status: query.status || undefined,
+    priority: query.priority || undefined,
     project_id: query.project_id ? Number(query.project_id) : undefined,
     assigned_to: query.assigned_to ? Number(query.assigned_to) : undefined,
     due_from: query.due_from,
@@ -129,10 +158,14 @@ export const getTasksByProjectService = async (projectId) => {
   return getTasksByProject(projectId)
 }
 
-export const updateTaskService = async (id, payload) => {
+export const updateTaskService = async (id, payload, requester) => {
   const existingTask = await getTaskById(id)
   if (!existingTask) {
     throw new Error('Task not found')
+  }
+
+  if (requester) {
+    await assertProjectAccess(existingTask.project_id, requester)
   }
 
   const updates = normalizeTaskPayload(payload)
@@ -162,10 +195,14 @@ export const updateTaskService = async (id, payload) => {
   return getTaskById(id)
 }
 
-export const deleteTaskService = async (id) => {
+export const deleteTaskService = async (id, requester) => {
   const existingTask = await getTaskById(id)
   if (!existingTask) {
     throw new Error('Task not found')
+  }
+
+  if (requester) {
+    await assertProjectAccess(existingTask.project_id, requester)
   }
 
   await deleteTask(id)

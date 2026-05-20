@@ -35,7 +35,6 @@ export const searchTasks = async ({
 
   if (status) where.status = status
   if (priority) where.priority = priority
-  if (project_id) where.project_id = project_id
   if (assigned_to) where.assigned_to = assigned_to
 
   if (due_from || due_to) {
@@ -59,7 +58,16 @@ export const searchTasks = async ({
       return { rows: [], count: 0 }
     }
 
-    where.project_id = { [Op.in]: projectIds }
+    if (project_id) {
+      if (!projectIds.includes(Number(project_id))) {
+        return { rows: [], count: 0 }
+      }
+      where.project_id = project_id
+    } else {
+      where.project_id = { [Op.in]: projectIds }
+    }
+  } else if (project_id) {
+    where.project_id = project_id
   }
 
   return Task.findAndCountAll({

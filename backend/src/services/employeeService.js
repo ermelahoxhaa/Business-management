@@ -50,6 +50,14 @@ export const searchEmployeesService = async (query, requester) => {
     defaultSort: 'created_at'
   })
 
+  if (query.employment_status && !statusWhitelist.includes(query.employment_status)) {
+    throw new Error('employment_status must be active or inactive')
+  }
+
+  if (query.role && !['employee', 'team_leader', 'admin'].includes(query.role)) {
+    throw new Error('Invalid role filter')
+  }
+
   const { rows, count } = await searchEmployees({
     search: listQuery.search,
     role: query.role,

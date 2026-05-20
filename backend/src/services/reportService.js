@@ -1,8 +1,12 @@
 import { searchTasksService } from './taskServices.js'
 import { searchProjectsService } from './projectServices.js'
 import { searchEmployeesService } from './employeeService.js'
+import { searchClientsService } from './clientService.js'
+import { fetchAllPages } from '../utils/queryParser.js'
 import { buildDownload } from '../utils/fileFormats.js'
 import { buildReportPdf } from '../utils/reportPdf.js'
+
+const allowedReportFormats = ['xlsx', 'csv', 'json', 'pdf']
 
 const reportTypes = {
   task_summary: {
@@ -20,8 +24,15 @@ const reportTypes = {
   employee_workload: {
     title: 'Employee workload report',
     description: 'Task distribution per employee in the selected period.'
+  },
+  client_directory: {
+    title: 'Client directory report',
+    description: 'Directory of clients with contact and company details.'
   }
 }
+
+const hasTaskFilters = (filters) =>
+  Boolean(filters.date_from || filters.date_to || filters.status || filters.priority || filters.project_id)
 
 const formatDate = (value) => {
   if (!value) return ''
@@ -35,7 +46,8 @@ const startOfDay = (date) => {
 }
 
 const isInDateRange = (dateValue, dateFrom, dateTo) => {
-  if (!dateValue) return !dateFrom && !dateTo
+  if (!dateFrom && !dateTo) return true
+  if (!dateValue) return false
   const date = startOfDay(dateValue)
   if (dateFrom && date < startOfDay(dateFrom)) return false
   if (dateTo) {
@@ -47,18 +59,15 @@ const isInDateRange = (dateValue, dateFrom, dateTo) => {
 }
 
 const loadReportData = async (requester) => {
-  const query = { limit: 5000, page: 1 }
-  const [tasksResult, projectsResult, employeesResult] = await Promise.all([
-    searchTasksService(query, requester),
-    searchProjectsService(query, requester),
-    searchEmployeesService(query, requester)
+  const query = {}
+  const [tasks, projects, employees, clients] = await Promise.all([
+    fetchAllPages(searchTasksService, query, requester),
+    fetchAllPages(searchProjectsService, query, requester),
+    fetchAllPages(searchEmployeesService, query, requester),
+    fetchAllPages(searchClientsService, query)
   ])
 
-  return {
-    tasks: tasksResult.data,
-    projects: projectsResult.data,
-    employees: employeesResult.data
-  }
+  return { tasks, projects, employees, clients }
 }
 
 const filterTasks = (tasks, filters) => {
@@ -143,7 +152,7 @@ const buildOverdueTasksReport = (tasks, projects) => {
   return { summary, headers, rows }
 }
 
-const buildProjectProgressReport = (tasks, projects) => {
+const buildProjectProgressReport = (tasks, projects, filters = {}) => {
   const headers = [
     { key: 'project', label: 'Project' },
     { key: 'total_tasks', label: 'Total tasks' },
@@ -152,24 +161,63 @@ const buildProjectProgressReport = (tasks, projects) => {
     { key: 'progress', label: 'Progress %' }
   ]
 
-  const rows = projects.map((project) => {
-    const projectTasks = tasks.filter((task) => Number(task.project_id) === Number(project.id))
-    const completed = projectTasks.filter((task) => task.status === 'done').length
-    const inProgress = projectTasks.filter((task) => task.status === 'in_progress').length
-    const progress = projectTasks.length ? Math.round((completed / projectTasks.length) * 100) : 0
+  const rows = projects
+    .map((project) => {
+      const projectTasks = tasks.filter((task) => Number(task.project_id) === Number(project.id))
+      const completed = projectTasks.filter((task) => task.status === 'done').length
+      const inProgress = projectTasks.filter((task) => task.status === 'in_progress').length
+      const progress = projectTasks.length ? Math.round((completed / projectTasks.length) * 100) : 0
 
-    return {
-      project: project.name,
-      total_tasks: projectTasks.length,
-      completed,
-      in_progress: inProgress,
-      progress
-    }
-  })
+      return {
+        project: project.name,
+        total_tasks: projectTasks.length,
+        completed,
+        in_progress: inProgress,
+        progress
+      }
+    })
+    .filter((row) => row.total_tasks > 0 || !hasTaskFilters(filters))
 
   const summary = [
-    { label: 'Projects', value: projects.length },
-    { label: 'Average progress', value: rows.length ? `${Math.round(rows.reduce((sum, row) => sum + Number(row.progress), 0) / rows.length)}%` : '0%' }
+    { label: 'Projects in report', value: rows.length },
+    {
+      label: 'Average progress',
+      value: rows.length
+        ? `${Math.round(rows.reduce((sum, row) => sum + Number(row.progress), 0) / rows.length)}%`
+        : '0%'
+    }
+  ]
+
+  return { summary, headers, rows }
+}
+
+const buildClientDirectoryReport = (clients, filters) => {
+  let scoped = clients
+
+  if (filters.status) {
+    scoped = scoped.filter((client) => client.status === filters.status)
+  }
+
+  const headers = [
+    { key: 'contact_name', label: 'Contact' },
+    { key: 'company_name', label: 'Company' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'status', label: 'Status' }
+  ]
+
+  const rows = scoped.map((client) => ({
+    contact_name: client.contact_name,
+    company_name: client.company_name,
+    email: client.email || '',
+    phone: client.phone || '',
+    status: client.status
+  }))
+
+  const summary = [
+    { label: 'Total clients', value: rows.length },
+    { label: 'Active', value: rows.filter((row) => row.status === 'active').length },
+    { label: 'Inactive', value: rows.filter((row) => row.status === 'inactive').length }
   ]
 
   return { summary, headers, rows }
@@ -220,9 +268,11 @@ const buildEmployeeWorkloadReport = (tasks, employees, filters) => {
 const reportBuilders = {
   task_summary: (tasks, projects, employees, filters) => buildTaskSummaryReport(tasks, projects, filters),
   overdue_tasks: (tasks, projects) => buildOverdueTasksReport(tasks, projects),
-  project_progress: (tasks, projects) => buildProjectProgressReport(tasks, projects),
-  employee_workload: (tasks, projects, employees, filters) =>
-    buildEmployeeWorkloadReport(tasks, employees, filters)
+  project_progress: (tasks, projects, _employees, filters) => buildProjectProgressReport(tasks, projects, filters),
+  employee_workload: (tasks, _projects, employees, filters) =>
+    buildEmployeeWorkloadReport(tasks, employees, filters),
+  client_directory: (_tasks, _projects, _employees, filters, clients) =>
+    buildClientDirectoryReport(clients, filters)
 }
 
 export const getReportTypesService = () =>
@@ -237,17 +287,28 @@ export const generateReportService = async (type, filters, requester) => {
     throw new Error('Invalid report type')
   }
 
-  const { tasks, projects, employees } = await loadReportData(requester)
+  const { tasks, projects, employees, clients } = await loadReportData(requester)
   const scopedTasks = filterTasks(tasks, filters)
   const builder = reportBuilders[type]
-  const { summary, headers, rows } = builder(scopedTasks, projects, employees, filters)
+  const { summary, headers, rows } = builder(scopedTasks, projects, employees, filters, clients)
 
   const filterSummary = []
   if (filters.date_from) filterSummary.push(`From ${filters.date_from}`)
   if (filters.date_to) filterSummary.push(`To ${filters.date_to}`)
   if (filters.status) filterSummary.push(`Status: ${filters.status}`)
-  if (filters.project_id) filterSummary.push(`Project ID: ${filters.project_id}`)
-  if (filters.department_id) filterSummary.push(`Department ID: ${filters.department_id}`)
+  if (filters.priority) filterSummary.push(`Priority: ${filters.priority}`)
+  if (filters.project_id) {
+    const projectName = projects.find((project) => Number(project.id) === Number(filters.project_id))?.name
+    filterSummary.push(projectName ? `Project: ${projectName}` : `Project ID: ${filters.project_id}`)
+  }
+  if (filters.department_id) {
+    const departmentName = employees.find(
+      (employee) => Number(employee.department_id) === Number(filters.department_id)
+    )?.department_name
+    filterSummary.push(
+      departmentName ? `Department: ${departmentName}` : `Department ID: ${filters.department_id}`
+    )
+  }
 
   return {
     type,
@@ -270,10 +331,16 @@ export const generateReportService = async (type, filters, requester) => {
 }
 
 export const exportReportService = async (type, format, filters, requester) => {
+  const normalizedFormat = String(format || 'xlsx').toLowerCase()
+
+  if (!allowedReportFormats.includes(normalizedFormat)) {
+    throw new Error('Format must be xlsx, csv, json, or pdf')
+  }
+
   const report = await generateReportService(type, filters, requester)
   const filenameBase = `${type}-report`
 
-  if (format === 'pdf') {
+  if (normalizedFormat === 'pdf') {
     const buffer = await buildReportPdf({
       title: report.title,
       subtitle: `${report.filter_summary} · Generated ${formatDate(report.generated_at)}`,
@@ -289,5 +356,5 @@ export const exportReportService = async (type, format, filters, requester) => {
     }
   }
 
-  return buildDownload(report.rows, report.headers, format, filenameBase)
+  return buildDownload(report.rows, report.headers, normalizedFormat, filenameBase)
 }

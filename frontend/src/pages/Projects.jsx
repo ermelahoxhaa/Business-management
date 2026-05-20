@@ -27,15 +27,17 @@ export default function Projects() {
   })
   const [saving, setSaving] = useState(false)
   const [listMeta, setListMeta] = useState({ total: 0, page: 1, totalPages: 1 })
+  const [listPage, setListPage] = useState(1)
   const emptySearch = { search: '', sort: 'created_at', order: 'desc' }
   const [searchQuery, setSearchQuery] = useState(emptySearch)
 
-  const loadProjects = async (query = searchQuery) => {
+  const loadProjects = async (query = searchQuery, page = listPage) => {
     try {
-      const response = await getProjects(buildQueryParams({ ...query, limit: 100 }))
+      const response = await getProjects(buildQueryParams({ ...query, page, limit: 50 }))
       const { items, meta } = unwrapList(response)
       setProjects(items)
       setListMeta(meta)
+      setListPage(meta.page || page)
     } catch (err) {
       console.error('Error loading projects:', err)
       alert(err.response?.data?.message || 'Unable to load projects')
@@ -70,12 +72,19 @@ export default function Projects() {
 
   const handleSearchSubmit = (event) => {
     event.preventDefault()
-    loadProjects(searchQuery)
+    setListPage(1)
+    loadProjects(searchQuery, 1)
   }
 
   const handleSearchReset = () => {
     setSearchQuery(emptySearch)
-    loadProjects(emptySearch)
+    setListPage(1)
+    loadProjects(emptySearch, 1)
+  }
+
+  const handlePageChange = (nextPage) => {
+    setListPage(nextPage)
+    loadProjects(searchQuery, nextPage)
   }
 
   const getProjectStats = (projectId) => {
@@ -330,6 +339,8 @@ export default function Projects() {
             { value: 'updated_at', label: 'Updated date' }
           ]}
           resultMeta={listMeta}
+          page={listPage}
+          onPageChange={handlePageChange}
         />
 
         <DataTransferBar

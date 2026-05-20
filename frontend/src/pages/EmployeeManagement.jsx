@@ -38,8 +38,10 @@ export default function EmployeeManagement() {
   const [error, setError] = useState('')
   const [filters, setFilters] = useState(emptyFilters)
   const [employeeMeta, setEmployeeMeta] = useState({ total: 0, page: 1, totalPages: 1 })
+  const [employeePage, setEmployeePage] = useState(1)
   const [departmentFilters, setDepartmentFilters] = useState(emptyDepartmentFilters)
   const [departmentMeta, setDepartmentMeta] = useState({ total: 0, page: 1, totalPages: 1 })
+  const [departmentPage, setDepartmentPage] = useState(1)
   const [form, setForm] = useState(defaultForm)
   const [editId, setEditId] = useState(null)
   const [showForm, setShowForm] = useState(false)
@@ -50,26 +52,29 @@ export default function EmployeeManagement() {
     [departments]
   )
 
-  const loadDepartments = useCallback(async (activeFilters) => {
-    const response = await getDepartments(buildQueryParams({ ...activeFilters, limit: 100 }))
+  const loadDepartments = useCallback(async (activeFilters, page = departmentPage) => {
+    const response = await getDepartments(buildQueryParams({ ...activeFilters, page, limit: 50 }))
     const { items, meta } = unwrapList(response)
     setDepartments(items)
     setDepartmentMeta(meta)
-  }, [])
+    setDepartmentPage(meta.page || page)
+  }, [departmentPage])
 
-  const loadEmployees = useCallback(async (activeFilters) => {
+  const loadEmployees = useCallback(async (activeFilters, page = employeePage) => {
     const response = await getEmployees(buildQueryParams({
       search: activeFilters.search || undefined,
       role: activeFilters.role || undefined,
       department_id: activeFilters.department_id || undefined,
       sort: activeFilters.sort,
       order: activeFilters.order,
-      limit: 100
+      page,
+      limit: 50
     }))
     const { items, meta } = unwrapList(response)
     setEmployees(items)
     setEmployeeMeta(meta)
-  }, [])
+    setEmployeePage(meta.page || page)
+  }, [employeePage])
 
   const loadData = useCallback(async (activeFilters) => {
     setLoading(true)
@@ -94,9 +99,10 @@ export default function EmployeeManagement() {
 
   const handleSearchSubmit = async (e) => {
     e.preventDefault()
+    setEmployeePage(1)
     setLoading(true)
     try {
-      await loadEmployees(filters)
+      await loadEmployees(filters, 1)
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to filter employees')
     } finally {
@@ -106,22 +112,35 @@ export default function EmployeeManagement() {
 
   const handleEmployeeSearchReset = async () => {
     setFilters(emptyFilters)
+    setEmployeePage(1)
     setLoading(true)
     try {
-      await loadEmployees(emptyFilters)
+      await loadEmployees(emptyFilters, 1)
     } finally {
       setLoading(false)
     }
   }
 
+  const handleEmployeePageChange = async (nextPage) => {
+    setEmployeePage(nextPage)
+    await loadEmployees(filters, nextPage)
+  }
+
   const handleDepartmentSearchSubmit = async (event) => {
     event.preventDefault()
-    await loadDepartments(departmentFilters)
+    setDepartmentPage(1)
+    await loadDepartments(departmentFilters, 1)
   }
 
   const handleDepartmentSearchReset = async () => {
     setDepartmentFilters(emptyDepartmentFilters)
-    await loadDepartments(emptyDepartmentFilters)
+    setDepartmentPage(1)
+    await loadDepartments(emptyDepartmentFilters, 1)
+  }
+
+  const handleDepartmentPageChange = async (nextPage) => {
+    setDepartmentPage(nextPage)
+    await loadDepartments(departmentFilters, nextPage)
   }
 
   const resetForm = () => {
@@ -291,6 +310,8 @@ export default function EmployeeManagement() {
             { value: 'department', label: 'Department' }
           ]}
           resultMeta={employeeMeta}
+          page={employeePage}
+          onPageChange={handleEmployeePageChange}
         >
           <div className="grid gap-4 md:grid-cols-2">
             <select
@@ -341,6 +362,8 @@ export default function EmployeeManagement() {
             { value: 'employee_count', label: 'Team size' }
           ]}
           resultMeta={departmentMeta}
+          page={departmentPage}
+          onPageChange={handleDepartmentPageChange}
         />
 
         <DataTransferBar

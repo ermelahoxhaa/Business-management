@@ -59,10 +59,6 @@ export const searchEmployees = async ({
   const userWhere = {}
   const roleWhere = role ? { name: role } : {}
 
-  if (departmentId) {
-    where.department_id = departmentId
-  }
-
   if (employment_status) {
     where.employment_status = employment_status
   }
@@ -81,7 +77,14 @@ export const searchEmployees = async ({
     if (!requesterProfile?.department_id) {
       return { rows: [], count: 0 }
     }
+
+    if (departmentId && Number(departmentId) !== Number(requesterProfile.department_id)) {
+      return { rows: [], count: 0 }
+    }
+
     where.department_id = requesterProfile.department_id
+  } else if (departmentId) {
+    where.department_id = departmentId
   }
 
   const sortMap = {
