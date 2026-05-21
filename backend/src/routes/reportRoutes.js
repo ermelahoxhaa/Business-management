@@ -4,14 +4,14 @@ import {
   getReportTypesController,
   previewReportController
 } from '../controllers/reportController.js'
-import { requireAuth, requireRoles } from '../middleware/authMiddleware.js'
+import { requireAuth, requirePermissions } from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
-router.use(requireAuth, requireRoles(['admin', 'team_leader']))
+router.use(requireAuth)
 
-router.get('/types', getReportTypesController)
-router.get('/:type/preview', previewReportController)
-router.get('/:type/export', exportReportController)
+router.get('/types', requirePermissions('reports.read'), getReportTypesController)
+router.get('/:type/preview', requirePermissions('reports.read'), previewReportController)
+router.get('/:type/export', requirePermissions('reports.export'), exportReportController)
 
 export default router

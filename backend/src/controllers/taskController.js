@@ -8,6 +8,7 @@ import {
   updateTaskService,
   deleteTaskService
 } from '../services/taskServices.js'
+import { logAudit } from '../services/auditService.js'
 
 export const createTaskController = async (req, res) => {
   try {
@@ -15,6 +16,13 @@ export const createTaskController = async (req, res) => {
       ...req.body,
       created_by: req.user.id
     }, req.user)
+    await logAudit({
+      userId: req.user.id,
+      action: 'create',
+      entityType: 'task',
+      entityId: task.id,
+      ipAddress: req.ip
+    })
     res.status(201).json(task)
   } catch (err) {
     res.status(400).json({ message: err.message })
@@ -101,6 +109,13 @@ export const updateTaskController = async (req, res) => {
       ...req.body,
       updated_by: req.user.id
     }, req.user)
+    await logAudit({
+      userId: req.user.id,
+      action: 'update',
+      entityType: 'task',
+      entityId: Number(req.params.id),
+      ipAddress: req.ip
+    })
     res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })
@@ -110,6 +125,13 @@ export const updateTaskController = async (req, res) => {
 export const deleteTaskController = async (req, res) => {
   try {
     const result = await deleteTaskService(req.params.id, req.user)
+    await logAudit({
+      userId: req.user.id,
+      action: 'delete',
+      entityType: 'task',
+      entityId: Number(req.params.id),
+      ipAddress: req.ip
+    })
     res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })

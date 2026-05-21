@@ -1,8 +1,8 @@
 import axios from 'axios'
-import { getToken } from './auth.js'
+import { getToken, getRefreshToken, setAuthData, clearAuthData } from './auth.js'
 
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'http://localhost:5000/api'
 })
 
 API.interceptors.request.use((config) => {
@@ -13,9 +13,65 @@ API.interceptors.request.use((config) => {
   return config
 })
 
+let refreshPromise = null
+
+API.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config
+    if (!originalRequest || originalRequest._retry) {
+      return Promise.reject(error)
+    }
+
+    if (error.response?.status !== 401) {
+      return Promise.reject(error)
+    }
+
+    if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/refresh')) {
+      return Promise.reject(error)
+    }
+
+    const refreshToken = getRefreshToken()
+    if (!refreshToken) {
+      clearAuthData()
+      return Promise.reject(error)
+    }
+
+    if (!refreshPromise) {
+      refreshPromise = API.post('/auth/refresh', { refreshToken })
+        .then((response) => {
+          const data = response.data
+          const accessToken = data.accessToken || data.token
+          setAuthData(accessToken, data.user, data.role, data.refreshToken)
+          return accessToken
+        })
+        .catch((refreshError) => {
+          clearAuthData()
+          throw refreshError
+        })
+        .finally(() => {
+          refreshPromise = null
+        })
+    }
+
+    try {
+      const accessToken = await refreshPromise
+      originalRequest._retry = true
+      originalRequest.headers.Authorization = `Bearer ${accessToken}`
+      return API(originalRequest)
+    } catch (refreshError) {
+      return Promise.reject(refreshError)
+    }
+  }
+)
+
 export const signupUser = (data) => API.post('/auth/signup', data)
 
 export const loginUser = (data) => API.post('/auth/login', data)
+
+export const refreshSession = (refreshToken) => API.post('/auth/refresh', { refreshToken })
+
+export const logoutUser = (refreshToken) => API.post('/auth/logout', { refreshToken })
 
 export const getTasks = (params) => API.get('/tasks', { params })
 export const getMyTasks = (params) => API.get('/tasks/my-tasks', { params })
@@ -75,4 +131,3 @@ export const exportReport = (type, format, params) =>
     params: { format, ...params },
     responseType: 'blob'
   })
-

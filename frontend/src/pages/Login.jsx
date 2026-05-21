@@ -25,8 +25,8 @@ export default function Login() {
 
     try {
       const res = await loginUser(form)
-
-      setAuthData(res.data.token, res.data.user, res.data.role)
+      const accessToken = res.data.accessToken || res.data.token
+      setAuthData(accessToken, res.data.user, res.data.role, res.data.refreshToken)
       navigate(getDefaultRouteForRole(res.data.role), { replace: true })
     } catch (err) {
       alert(err.response?.data?.message || 'Login failed')

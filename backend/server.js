@@ -8,6 +8,16 @@ import Role from './src/models/Role.js'
 import UserRole from './src/models/UserRole.js'
 import Department from './src/models/Department.js'
 import Employee from './src/models/Employee.js'
+import Client from './src/models/Client.js'
+import RefreshToken from './src/models/RefreshToken.js'
+import Permission from './src/models/Permission.js'
+import RolePermission from './src/models/RolePermission.js'
+import ImportBatch from './src/models/ImportBatch.js'
+import ReportRun from './src/models/ReportRun.js'
+import AuditLog from './src/models/AuditLog.js'
+import ClientProject from './src/models/ClientProject.js'
+import Invoice from './src/models/Invoice.js'
+import { seedPermissions } from './src/services/permissionService.js'
 import bcrypt from 'bcrypt'
 
 dotenv.config()
@@ -127,6 +137,7 @@ const startServer = async () => {
     await sequelize.sync({ alter: true })
 
     await seedRolesAndAdmin()
+    await seedPermissions()
 
     await connectMongo()
 

@@ -1,6 +1,7 @@
-import jwt from 'jsonwebtoken'
+import { verifyAccessToken } from '../utils/tokens.js'
+import { getPermissionsForRole, roleHasPermission } from '../services/permissionService.js'
 
-export const requireAuth = (req, res, next) => {
+export const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization || ''
   const [scheme, token] = authHeader.split(' ')
 
@@ -9,24 +10,44 @@ export const requireAuth = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret')
-    req.user = decoded
+    const decoded = verifyAccessToken(token)
+    const permissions = decoded.permissions || await getPermissionsForRole(decoded.role)
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+      permissions
+    }
     return next()
-  } catch (error) {
+  } catch {
     return res.status(401).json({ message: 'Invalid or expired token' })
   }
 }
 
-export const requireRoles = (allowedRoles = []) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({ message: 'Authentication required' })
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'You do not have permission to perform this action' })
-    }
-
-    return next()
+export const requireRoles = (allowedRoles = []) => (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Authentication required' })
   }
+
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ message: 'You do not have permission to perform this action' })
+  }
+
+  return next()
+}
+
+export const requirePermissions = (...requiredPermissions) => (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Authentication required' })
+  }
+
+  const allowed = requiredPermissions.some((code) =>
+    roleHasPermission(req.user.permissions || [], code)
+  )
+
+  if (!allowed) {
+    return res.status(403).json({ message: 'You do not have permission to perform this action' })
+  }
+
+  return next()
 }

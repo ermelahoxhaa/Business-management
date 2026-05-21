@@ -79,8 +79,8 @@ export default function Dashboard() {
     })
     .slice(0, 5)
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate('/login', { replace: true })
   }
 

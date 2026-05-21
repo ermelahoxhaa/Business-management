@@ -9,6 +9,9 @@ import { createEmployeeService } from './employeeService.js'
 import { findDepartmentByName } from '../repositories/departmentRepository.js'
 import { buildDownload, parseUploadedFile } from '../utils/fileFormats.js'
 import { fetchAllPages } from '../utils/queryParser.js'
+import ImportBatch from '../models/ImportBatch.js'
+import { roleHasPermission } from './permissionService.js'
+import { logAudit } from './auditService.js'
 
 const allowedEntities = ['tasks', 'projects', 'employees', 'departments', 'clients']
 const allowedFormats = ['csv', 'json', 'xlsx']
@@ -263,12 +266,14 @@ export const importEntityService = async (entity, file, requester) => {
     throw new Error('Invalid import entity')
   }
 
-  if (entity === 'employees' && requester.role !== 'admin') {
-    throw new Error('Only admins can import employees')
+  const permissions = requester.permissions || []
+
+  if (entity === 'employees' && !roleHasPermission(permissions, 'data_transfer.import_staff')) {
+    throw new Error('You do not have permission to import employees')
   }
 
-  if (entity === 'departments' && requester.role !== 'admin') {
-    throw new Error('Only admins can import departments')
+  if (entity === 'departments' && !roleHasPermission(permissions, 'data_transfer.import_staff')) {
+    throw new Error('You do not have permission to import departments')
   }
 
   if (!file) {
@@ -297,11 +302,39 @@ export const importEntityService = async (entity, file, requester) => {
     }
   }
 
-  return {
+  const result = {
     entity,
     total: rows.length,
     success: successCount,
     failed: errors.length,
     errors
   }
+
+  const status =
+    successCount === 0 ? 'failed' : errors.length > 0 ? 'partial' : 'completed'
+
+  const batch = await ImportBatch.create({
+    entity,
+    file_name: file.originalname || null,
+    total_rows: rows.length,
+    success_count: successCount,
+    failed_count: errors.length,
+    status,
+    error_summary: errors.length > 0 ? errors.slice(0, 20) : null,
+    created_by: requester.id
+  })
+
+  await logAudit({
+    userId: requester.id,
+    action: 'import',
+    entityType: entity,
+    entityId: batch.id,
+    metadata: {
+      total: result.total,
+      success: result.success,
+      failed: result.failed
+    }
+  })
+
+  return { ...result, batchId: batch.id }
 }

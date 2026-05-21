@@ -6,16 +6,16 @@ import {
   getClientsController,
   updateClientController
 } from '../controllers/clientController.js'
-import { requireAuth, requireRoles } from '../middleware/authMiddleware.js'
+import { requireAuth, requirePermissions } from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
-router.use(requireAuth, requireRoles(['admin', 'team_leader']))
+router.use(requireAuth)
 
-router.get('/', getClientsController)
-router.get('/:id', getClientByIdController)
-router.post('/', createClientController)
-router.put('/:id', updateClientController)
-router.delete('/:id', deleteClientController)
+router.get('/', requirePermissions('clients.read'), getClientsController)
+router.get('/:id', requirePermissions('clients.read'), getClientByIdController)
+router.post('/', requirePermissions('clients.create'), createClientController)
+router.put('/:id', requirePermissions('clients.update'), updateClientController)
+router.delete('/:id', requirePermissions('clients.delete'), deleteClientController)
 
 export default router

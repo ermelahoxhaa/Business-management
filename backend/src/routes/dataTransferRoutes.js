@@ -4,7 +4,7 @@ import {
   exportEntityController,
   importEntityController
 } from '../controllers/dataTransferController.js'
-import { requireAuth, requireRoles } from '../middleware/authMiddleware.js'
+import { requireAuth, requirePermissions } from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 const upload = multer({
@@ -12,9 +12,9 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 })
 
-router.use(requireAuth, requireRoles(['admin', 'team_leader']))
+router.use(requireAuth)
 
-router.get('/:entity/export', exportEntityController)
-router.post('/:entity/import', upload.single('file'), importEntityController)
+router.get('/:entity/export', requirePermissions('data_transfer.export'), exportEntityController)
+router.post('/:entity/import', requirePermissions('data_transfer.import'), upload.single('file'), importEntityController)
 
 export default router

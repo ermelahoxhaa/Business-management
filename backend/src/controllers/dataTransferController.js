@@ -16,7 +16,11 @@ export const exportEntityController = async (req, res) => {
 
 export const importEntityController = async (req, res) => {
   try {
-    const result = await importEntityService(req.params.entity, req.file, req.user)
+    const result = await importEntityService(req.params.entity, req.file, {
+      id: req.user.id,
+      role: req.user.role,
+      permissions: req.user.permissions || []
+    })
     res.json(result)
   } catch (error) {
     res.status(400).json({ message: error.message })

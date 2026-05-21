@@ -1,8 +1,8 @@
 import bcrypt from 'bcrypt'
-import jwt from 'jsonwebtoken'
 import { createUser, findUserByEmail, getAllUsers } from '../repositories/userRepository.js'
 import Role from '../models/Role.js'
 import UserRole from '../models/UserRole.js'
+import { issueAuthTokens } from './refreshTokenService.js'
 
 const isStrongPassword = (password) =>
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(password)
@@ -28,7 +28,6 @@ export const registerUser = async ({ first_name, last_name, email, password, pas
     password_hash: hashed
   })
 
-
   const employeeRole = await Role.findOne({ where: { name: 'employee' } })
   if (employeeRole) {
     await UserRole.create({
@@ -47,23 +46,13 @@ export const loginUser = async ({ email, password }) => {
   const isMatch = await bcrypt.compare(password, user.password_hash)
   if (!isMatch) throw new Error('Invalid credentials')
 
-  
   const userRole = await UserRole.findOne({
     where: { user_id: user.id },
     include: [Role]
   })
 
-  const role = userRole?.Role?.name || 'employee' 
-
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role },
-    process.env.JWT_SECRET || 'fallback_secret',
-    { expiresIn: '1d' }
-  )
-
-  return { user, role, token }
+  const role = userRole?.Role?.name || 'employee'
+  return issueAuthTokens(user, role)
 }
 
-export const getAllUsersService = async () => {
-  return getAllUsers()
-}
+export const getAllUsersService = async () => getAllUsers()

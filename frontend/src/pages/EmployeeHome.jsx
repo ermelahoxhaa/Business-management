@@ -114,7 +114,6 @@ export default function EmployeeHome() {
   const [commentLoadingId, setCommentLoadingId] = useState(null)
   const [savingCommentId, setSavingCommentId] = useState(null)
 
-  // Employee routes only return work assigned to the signed-in user.
   const loadEmployeeData = useCallback(async () => {
     setLoading(true)
     setError('')
@@ -227,8 +226,8 @@ export default function EmployeeHome() {
   const departmentLabel = profile?.department_name || 'No department assigned'
   const positionLabel = profile?.position?.trim() || 'No position set'
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate('/login', { replace: true })
   }
 

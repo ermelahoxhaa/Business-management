@@ -52,8 +52,8 @@ export default function Header() {
   const userRole = getUserRole()
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate('/home', { replace: true })
   }
 

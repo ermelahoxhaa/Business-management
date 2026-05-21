@@ -5,6 +5,8 @@ import { searchClientsService } from './clientService.js'
 import { fetchAllPages } from '../utils/queryParser.js'
 import { buildDownload } from '../utils/fileFormats.js'
 import { buildReportPdf } from '../utils/reportPdf.js'
+import ReportRun from '../models/ReportRun.js'
+import { logAudit } from './auditService.js'
 
 const allowedReportFormats = ['xlsx', 'csv', 'json', 'pdf']
 
@@ -282,7 +284,28 @@ export const getReportTypesService = () =>
     description: config.description
   }))
 
-export const generateReportService = async (type, filters, requester) => {
+const recordReportRun = async ({ type, format, filters, rowCount, runMode, userId }) => {
+  const run = await ReportRun.create({
+    report_type: type,
+    format: format || null,
+    filters: filters || null,
+    row_count: rowCount,
+    run_mode: runMode,
+    created_by: userId
+  })
+
+  await logAudit({
+    userId,
+    action: runMode === 'export' ? 'report_export' : 'report_preview',
+    entityType: 'report',
+    entityId: run.id,
+    metadata: { report_type: type, format: format || null, row_count: rowCount }
+  })
+
+  return run
+}
+
+export const generateReportService = async (type, filters, requester, options = {}) => {
   if (!reportTypes[type]) {
     throw new Error('Invalid report type')
   }
@@ -310,7 +333,7 @@ export const generateReportService = async (type, filters, requester) => {
     )
   }
 
-  return {
+  const report = {
     type,
     title: reportTypes[type].title,
     description: reportTypes[type].description,
@@ -328,6 +351,19 @@ export const generateReportService = async (type, filters, requester) => {
     headers,
     rows
   }
+
+  if (requester?.id) {
+    await recordReportRun({
+      type,
+      format: options.format || null,
+      filters,
+      rowCount: rows.length,
+      runMode: options.runMode || 'preview',
+      userId: requester.id
+    })
+  }
+
+  return report
 }
 
 export const exportReportService = async (type, format, filters, requester) => {
@@ -337,7 +373,10 @@ export const exportReportService = async (type, format, filters, requester) => {
     throw new Error('Format must be xlsx, csv, json, or pdf')
   }
 
-  const report = await generateReportService(type, filters, requester)
+  const report = await generateReportService(type, filters, requester, {
+    runMode: 'export',
+    format: normalizedFormat
+  })
   const filenameBase = `${type}-report`
 
   if (normalizedFormat === 'pdf') {
