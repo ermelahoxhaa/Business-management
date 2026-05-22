@@ -9,6 +9,8 @@ import {
   deleteTaskService
 } from '../services/taskServices.js'
 import { logAudit } from '../services/auditService.js'
+import { createNotification } from '../services/notificationService.js'
+import TaskStatusHistory from '../models/TaskStatusHistory.js'
 
 export const createTaskController = async (req, res) => {
   try {
@@ -23,6 +25,15 @@ export const createTaskController = async (req, res) => {
       entityId: task.id,
       ipAddress: req.ip
     })
+    if (task.assigned_to) {
+      await createNotification({
+        userId: task.assigned_to,
+        title: 'New task assigned',
+        message: `You were assigned: ${task.title}`,
+        entityType: 'task',
+        entityId: task.id
+      })
+    }
     res.status(201).json(task)
   } catch (err) {
     res.status(400).json({ message: err.message })
@@ -97,6 +108,21 @@ export const updateMyTaskStatusController = async (req, res) => {
       status: nextStatus,
       updated_by: req.user.id
     })
+    await TaskStatusHistory.create({
+      task_id: task.id,
+      old_status: task.status,
+      new_status: nextStatus,
+      changed_by: req.user.id
+    })
+    if (task.created_by && Number(task.created_by) !== Number(req.user.id)) {
+      await createNotification({
+        userId: task.created_by,
+        title: 'Task status updated',
+        message: `${task.title} is now ${nextStatus.replace('_', ' ')}`,
+        entityType: 'task',
+        entityId: task.id
+      })
+    }
     res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })

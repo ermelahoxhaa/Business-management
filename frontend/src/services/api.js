@@ -131,3 +131,11 @@ export const exportReport = (type, format, params) =>
     params: { format, ...params },
     responseType: 'blob'
   })
+
+export const getNotifications = () => API.get('/notifications')
+
+export const markNotificationRead = (id) => API.patch(`/notifications/${id}/read`)
+
+export const markAllNotificationsRead = () => API.patch('/notifications/read-all')
+
+export const getActivity = () => API.get('/activity')

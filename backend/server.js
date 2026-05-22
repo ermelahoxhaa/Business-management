@@ -1,22 +1,37 @@
+import http from 'http'
 import app from './src/app.js'
 import dotenv from 'dotenv'
 import sequelize from './src/config/database.js'
 import { Op } from 'sequelize'
 import connectMongo from './src/config/mongo.js'
+import { initSocket } from './src/config/socket.js'
+import './src/models/User.js'
+import './src/models/Role.js'
+import './src/models/UserRole.js'
+import './src/models/Project.js'
+import './src/models/Task.js'
+import './src/models/TaskComment.js'
+import './src/models/Department.js'
+import './src/models/Employee.js'
+import './src/models/Client.js'
+import './src/models/RefreshToken.js'
+import './src/models/Permission.js'
+import './src/models/RolePermission.js'
+import './src/models/ImportBatch.js'
+import './src/models/ReportRun.js'
+import './src/models/AuditLog.js'
+import './src/models/ClientProject.js'
+import './src/models/Invoice.js'
+import './src/models/Notification.js'
+import './src/models/ProjectMember.js'
+import './src/models/InvoiceItem.js'
+import './src/models/Payment.js'
+import './src/models/ClientContact.js'
+import './src/models/TaskStatusHistory.js'
+import CompanySetting from './src/models/CompanySetting.js'
 import User from './src/models/User.js'
 import Role from './src/models/Role.js'
 import UserRole from './src/models/UserRole.js'
-import Department from './src/models/Department.js'
-import Employee from './src/models/Employee.js'
-import Client from './src/models/Client.js'
-import RefreshToken from './src/models/RefreshToken.js'
-import Permission from './src/models/Permission.js'
-import RolePermission from './src/models/RolePermission.js'
-import ImportBatch from './src/models/ImportBatch.js'
-import ReportRun from './src/models/ReportRun.js'
-import AuditLog from './src/models/AuditLog.js'
-import ClientProject from './src/models/ClientProject.js'
-import Invoice from './src/models/Invoice.js'
 import { seedPermissions } from './src/services/permissionService.js'
 import bcrypt from 'bcrypt'
 
@@ -56,7 +71,6 @@ const seedRolesAndAdmin = async () => {
         })
       }
 
-     
       await UserRole.destroy({
         where: {
           user_id: adminUser.id,
@@ -105,7 +119,6 @@ const seedRolesAndAdmin = async () => {
       })
     }
 
-
     const employeeEmail = process.env.EMPLOYEE_EMAIL || 'employee@example.com'
     const employeePassword = process.env.EMPLOYEE_PASSWORD || 'employee123'
 
@@ -124,6 +137,11 @@ const seedRolesAndAdmin = async () => {
         role_id: employeeRole[0].id
       })
     }
+
+    await CompanySetting.findOrCreate({
+      where: { key: 'company_name' },
+      defaults: { key: 'company_name', value: 'Business Management' }
+    })
   } catch (error) {
     console.error('Error seeding roles and users:', error)
   }
@@ -141,8 +159,12 @@ const startServer = async () => {
 
     await connectMongo()
 
-    app.listen(PORT, () => {
+    const httpServer = http.createServer(app)
+    initSocket(httpServer)
+
+    httpServer.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`)
+      console.log(`API docs: http://localhost:${PORT}/api/docs`)
     })
   } catch (error) {
     console.error('Error starting server:', error)

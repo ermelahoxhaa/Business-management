@@ -2,6 +2,8 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
+import swaggerUi from 'swagger-ui-express'
+import swaggerSpec from './config/swagger.js'
 
 const app = express()
 
@@ -31,6 +33,10 @@ import employeeRoutes from './routes/employeeRoutes.js'
 import dataTransferRoutes from './routes/dataTransferRoutes.js'
 import reportRoutes from './routes/reportRoutes.js'
 import clientRoutes from './routes/clientRoutes.js'
+import notificationRoutes from './routes/notificationRoutes.js'
+import activityRoutes from './routes/activityRoutes.js'
+
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 app.use('/api/auth', authRoutes)
 app.use('/api/tasks', taskRoutes)
@@ -41,5 +47,7 @@ app.use('/api/employees', employeeRoutes)
 app.use('/api/data-transfer', dataTransferRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/clients', clientRoutes)
+app.use('/api/notifications', notificationRoutes)
+app.use('/api/activity', activityRoutes)
 
 export default app

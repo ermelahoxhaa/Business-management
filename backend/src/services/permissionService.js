@@ -29,7 +29,8 @@ export const PERMISSION_CODES = [
   'invoices.read',
   'invoices.create',
   'invoices.update',
-  'client_projects.manage'
+  'client_projects.manage',
+  'notifications.read'
 ]
 
 const ROLE_PERMISSION_MAP = {
@@ -56,9 +57,10 @@ const ROLE_PERMISSION_MAP = {
     'invoices.read',
     'invoices.create',
     'invoices.update',
-    'client_projects.manage'
+    'client_projects.manage',
+    'notifications.read'
   ],
-  employee: []
+  employee: ['notifications.read']
 }
 
 export const seedPermissions = async () => {
