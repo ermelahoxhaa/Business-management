@@ -33,6 +33,7 @@ import employeeRoutes from './routes/employeeRoutes.js'
 import dataTransferRoutes from './routes/dataTransferRoutes.js'
 import reportRoutes from './routes/reportRoutes.js'
 import clientRoutes from './routes/clientRoutes.js'
+import invoiceRoutes from './routes/invoiceRoutes.js'
 import notificationRoutes from './routes/notificationRoutes.js'
 import activityRoutes from './routes/activityRoutes.js'
 
@@ -47,6 +48,7 @@ app.use('/api/employees', employeeRoutes)
 app.use('/api/data-transfer', dataTransferRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/clients', clientRoutes)
+app.use('/api/invoices', invoiceRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/activity', activityRoutes)
 

@@ -150,6 +150,7 @@ export default function Dashboard() {
               {[
                 { label: 'Dashboard Overview', icon: '📊', path: '/dashboard' },
                 { label: 'Client Management', icon: '🏠', path: '/client' },
+                { label: 'Invoice Management', icon: '💰', path: '/invoices' },
                 { label: 'Projects', icon: '📁', path: '/projects' },
                 { label: 'Tasks', icon: '✅', path: '/tasks' },
                 { label: 'Reports', icon: '📈', path: '/reports' },
