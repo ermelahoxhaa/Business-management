@@ -1,6 +1,5 @@
 import http from 'http'
 import app from './src/app.js'
-import dotenv from 'dotenv'
 import sequelize from './src/config/database.js'
 import { Op } from 'sequelize'
 import connectMongo from './src/config/mongo.js'
@@ -34,8 +33,6 @@ import Role from './src/models/Role.js'
 import UserRole from './src/models/UserRole.js'
 import { seedPermissions } from './src/services/permissionService.js'
 import bcrypt from 'bcrypt'
-
-dotenv.config()
 
 const PORT = process.env.PORT || 5000
 
