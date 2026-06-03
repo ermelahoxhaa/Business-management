@@ -3,6 +3,7 @@ import { searchProjectsService } from './projectServices.js'
 import { searchEmployeesService } from './employeeService.js'
 import { searchDepartmentsService, createDepartmentService } from './departmentService.js'
 import { searchClientsService, createClientService } from './clientService.js'
+import { searchInvoicesService } from './invoiceService.js'
 import { createTaskService } from './taskServices.js'
 import { createProjectService } from './projectServices.js'
 import { createEmployeeService } from './employeeService.js'
@@ -13,7 +14,7 @@ import ImportBatch from '../models/ImportBatch.js'
 import { roleHasPermission } from './permissionService.js'
 import { logAudit } from './auditService.js'
 
-const allowedEntities = ['tasks', 'projects', 'employees', 'departments', 'clients']
+const allowedEntities = ['tasks', 'projects', 'employees', 'departments', 'clients', 'invoices']
 const allowedFormats = ['csv', 'json', 'xlsx']
 
 const entityConfig = {
@@ -111,6 +112,29 @@ const entityConfig = {
       address: client.address || '',
       status: client.status
     })
+  },
+  invoices: {
+    filename: 'invoices',
+    headers: [
+      { key: 'id', label: 'id' },
+      { key: 'invoice_number', label: 'invoice_number' },
+      { key: 'client_id', label: 'client_id' },
+      { key: 'amount', label: 'amount' },
+      { key: 'currency', label: 'currency' },
+      { key: 'status', label: 'status' },
+      { key: 'due_date', label: 'due_date' },
+      { key: 'issued_at', label: 'issued_at' }
+    ],
+    mapExport: (invoice) => ({
+      id: invoice.id,
+      invoice_number: invoice.invoice_number,
+      client_id: invoice.client_id,
+      amount: invoice.amount,
+      currency: invoice.currency,
+      status: invoice.status,
+      due_date: invoice.due_date ? new Date(invoice.due_date).toISOString().slice(0, 10) : '',
+      issued_at: invoice.issued_at ? new Date(invoice.issued_at).toISOString().slice(0, 10) : ''
+    })
   }
 }
 
@@ -131,6 +155,10 @@ const fetchRows = async (entity, query, requester) => {
 
   if (entity === 'clients') {
     return fetchAllPages(searchClientsService, exportQuery)
+  }
+
+  if (entity === 'invoices') {
+    return fetchAllPages(searchInvoicesService, exportQuery)
   }
 
   return fetchAllPages(searchDepartmentsService, exportQuery)

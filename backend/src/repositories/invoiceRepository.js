@@ -13,10 +13,7 @@ export const searchInvoices = async ({ search, status, sort, order, limit, offse
     const value = `%${search}%`
     where[Op.or] = [
       { invoice_number: { [Op.iLike]: value } },
-      { client_name: { [Op.iLike]: value } },
-      { amount: { [Op.iLike]: value } },
-      {status: { [Op.iLike]: value } },
-      { due_date: { [Op.iLike]: value } }
+      { status: { [Op.iLike]: value } }
     ]
   }
 

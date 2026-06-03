@@ -74,7 +74,7 @@ export const deleteInvoiceController = async (req, res) => {
             entityId: Number(req.params.id),
             ipAddress: req.ip
         })
-        res.json(result)
+        res.json({ message: 'Invoice deleted successfully' })
     } catch (error) {
         res.status(400).json({ message: error.message })
     }

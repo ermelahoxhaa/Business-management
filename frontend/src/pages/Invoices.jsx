@@ -1,15 +1,43 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Download, Edit2, Trash2 } from 'lucide-react'
-import { getClients, getProjects, exportEntityData } from '../services/api'
-import { getUserRole, getCurrentUser } from '../services/auth'
+import {
+  getClients,
+  getProjects,
+  getInvoices,
+  createInvoice,
+  updateInvoice,
+  deleteInvoice,
+  exportEntityData
+} from '../services/api'
+import { getUserRole } from '../services/auth'
 import ListSearchPanel from '../components/ListSearchPanel'
 import { buildQueryParams, unwrapList } from '../utils/listResponse'
 
+const formatClientName = (client) =>
+  [client?.contact_name, client?.company_name].filter(Boolean).join(' - ') || `Client #${client?.id}`
+
+const formatDateForInput = (value) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
+  return date.toISOString().split('T')[0]
+}
+
+const buildInvoicePayload = (form) => ({
+  client_id: Number(form.client_id),
+  invoice_number: form.invoice_number.trim(),
+  amount: parseFloat(form.amount) || 0,
+  currency: form.currency || 'EUR',
+  status: form.status || 'draft',
+  due_date: form.due_date || null,
+  issued_at: form.issued_at || null
+})
+
 export default function Invoices() {
   const userRole = getUserRole()
-  const currentUser = getCurrentUser()
   const isAdmin = userRole === 'admin'
+  const canManage = isAdmin || userRole === 'team_leader'
 
   const [invoices, setInvoices] = useState([])
   const [clients, setClients] = useState([])
@@ -45,38 +73,13 @@ export default function Invoices() {
   const emptySearch = { search: '', sort: 'created_at', order: 'desc' }
   const [searchQuery, setSearchQuery] = useState(emptySearch)
 
-  // Mock data - replace with API calls when backend is ready
-  const mockInvoices = [
-    {
-      id: 1,
-      invoice_number: 'INV-001',
-      client_id: 1,
-      amount: 5000,
-      currency: 'EUR',
-      status: 'paid',
-      due_date: '2026-06-26',
-      issued_at: '2026-05-26',
-      project_id: 1,
-      created_by: currentUser?.id
-    },
-    {
-      id: 2,
-      invoice_number: 'INV-002',
-      client_id: 2,
-      amount: 3500,
-      currency: 'EUR',
-      status: 'sent',
-      due_date: '2026-06-15',
-      issued_at: '2026-05-15',
-      project_id: 2,
-      created_by: currentUser?.id
-    }
-  ]
-
   const loadInvoices = async (query = searchQuery, page = listPage) => {
     try {
-      setInvoices(mockInvoices)
-      setListMeta({ total: mockInvoices.length, page: 1, totalPages: 1 })
+      const response = await getInvoices(buildQueryParams({ ...query, page, limit: 50 }))
+      const { items, meta } = unwrapList(response)
+      setInvoices(items)
+      setListMeta(meta)
+      setListPage(meta.page || page)
     } catch (err) {
       console.error('Error loading invoices:', err)
       alert(err.response?.data?.message || 'Unable to load invoices')
@@ -155,8 +158,8 @@ export default function Invoices() {
       amount: invoice.amount || '',
       currency: invoice.currency || 'EUR',
       status: invoice.status || 'draft',
-      due_date: invoice.due_date || '',
-      issued_at: invoice.issued_at || '',
+      due_date: formatDateForInput(invoice.due_date),
+      issued_at: formatDateForInput(invoice.issued_at),
       project_id: invoice.project_id || ''
     })
   }
@@ -183,16 +186,9 @@ export default function Invoices() {
 
     setSaving(true)
     try {
-      // TODO: Call API when backend is ready
-      // await updateInvoice(invoiceId, editForm)
-      setInvoices(
-        invoices.map((inv) =>
-          inv.id === invoiceId
-            ? { ...inv, ...editForm }
-            : inv
-        )
-      )
+      await updateInvoice(invoiceId, buildInvoicePayload(editForm))
       setEditingId(null)
+      await loadInvoices(searchQuery, listPage)
       setEditForm({
         client_id: '',
         invoice_number: '',
@@ -218,9 +214,8 @@ export default function Invoices() {
 
     setSaving(true)
     try {
-      // TODO: Call API when backend is ready
-      // await deleteInvoice(invoiceId)
-      setInvoices(invoices.filter((inv) => inv.id !== invoiceId))
+      await deleteInvoice(invoiceId)
+      await loadInvoices(searchQuery, listPage)
     } catch (err) {
       console.error('Error deleting invoice:', err)
       alert(err.response?.data?.message || 'Unable to delete invoice')
@@ -245,19 +240,11 @@ export default function Invoices() {
     setSaving(true)
 
     try {
-      // TODO: Call API when backend is ready
-      // await createInvoice(form)
-      const newInvoice = {
-        id: Math.max(...invoices.map((i) => i.id), 0) + 1,
-        ...form,
-        client_id: parseInt(form.client_id),
-        project_id: form.project_id ? parseInt(form.project_id) : null,
-        amount: parseFloat(form.amount),
-        created_by: currentUser?.id
-      }
-      setInvoices([newInvoice, ...invoices])
+      await createInvoice(buildInvoicePayload(form))
       alert('Invoice created successfully')
       resetForm()
+      setListPage(1)
+      await loadInvoices(searchQuery, 1)
     } catch (err) {
       console.error(err)
       alert(err.response?.data?.message || 'Unable to create invoice')
@@ -268,7 +255,7 @@ export default function Invoices() {
 
   const getClientName = (clientId) => {
     const client = clients.find((c) => c.id === clientId)
-    return client?.name || `Client #${clientId}`
+    return client ? formatClientName(client) : `Client #${clientId}`
   }
 
   const getProjectName = (projectId) => {
@@ -321,11 +308,14 @@ export default function Invoices() {
         return
       }
 
-      const response = await exportEntityData('invoices', 'pdf', { id: invoiceId })
+      const response = await exportEntityData('invoices', 'xlsx', {
+        search: invoice.invoice_number,
+        limit: 1
+      })
       const url = window.URL.createObjectURL(new Blob([response.data]))
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `${invoice.invoice_number}.pdf`)
+      link.setAttribute('download', `${invoice.invoice_number}.xlsx`)
       document.body.appendChild(link)
       link.click()
       link.parentChild.removeChild(link)
@@ -364,7 +354,7 @@ export default function Invoices() {
           ))}
         </section>
 
-        {isAdmin && (
+        {canManage && (
           <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -386,7 +376,7 @@ export default function Invoices() {
                   <option value="">Select a client</option>
                   {clients.map((client) => (
                     <option key={client.id} value={client.id}>
-                      {client.name}
+                      {formatClientName(client)}
                     </option>
                   ))}
                 </select>
@@ -529,7 +519,7 @@ export default function Invoices() {
                               <option value="">Select a client</option>
                               {clients.map((client) => (
                                 <option key={client.id} value={client.id}>
-                                  {client.name}
+                                  {formatClientName(client)}
                                 </option>
                               ))}
                             </select>
@@ -640,12 +630,12 @@ export default function Invoices() {
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-400">Issued</span>
-                            <span className="text-white">{invoice.issued_at}</span>
+                            <span className="text-white">{formatDateForInput(invoice.issued_at)}</span>
                           </div>
                           {invoice.due_date && (
                             <div className="flex justify-between text-sm">
                               <span className="text-slate-400">Due</span>
-                              <span className="text-white">{invoice.due_date}</span>
+                              <span className="text-white">{formatDateForInput(invoice.due_date)}</span>
                             </div>
                           )}
                         </div>
@@ -659,26 +649,26 @@ export default function Invoices() {
                             <Download className="h-4 w-4" />
                             Export
                           </button>
+                          {canManage && (
+                            <button
+                              onClick={() => handleEditInvoice(invoice)}
+                              title="Edit invoice"
+                              className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-sky-500/20 px-3 py-2 text-sm font-medium text-sky-300 transition hover:bg-sky-500/30 hover:text-sky-200"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                              Edit
+                            </button>
+                          )}
                           {isAdmin && (
-                            <>
-                              <button
-                                onClick={() => handleEditInvoice(invoice)}
-                                title="Edit invoice"
-                                className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-sky-500/20 px-3 py-2 text-sm font-medium text-sky-300 transition hover:bg-sky-500/30 hover:text-sky-200"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteInvoice(invoice.id)}
-                                title="Delete invoice"
-                                disabled={saving}
-                                className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-rose-500/20 px-3 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-500/30 hover:text-rose-200 disabled:opacity-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Delete
-                              </button>
-                            </>
+                            <button
+                              onClick={() => handleDeleteInvoice(invoice.id)}
+                              title="Delete invoice"
+                              disabled={saving}
+                              className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-rose-500/20 px-3 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-500/30 hover:text-rose-200 disabled:opacity-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </button>
                           )}
                         </div>
                       </>

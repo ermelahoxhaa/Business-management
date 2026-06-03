@@ -102,6 +102,12 @@ export const createClient = (data) => API.post('/clients', data)
 export const updateClient = (id, data) => API.put(`/clients/${id}`, data)
 export const deleteClient = (id) => API.delete(`/clients/${id}`)
 
+export const getInvoices = (params) => API.get('/invoices', { params })
+export const getInvoice = (id) => API.get(`/invoices/${id}`)
+export const createInvoice = (data) => API.post('/invoices', data)
+export const updateInvoice = (id, data) => API.put(`/invoices/${id}`, data)
+export const deleteInvoice = (id) => API.delete(`/invoices/${id}`)
+
 export const getEmployees = (params) => API.get('/employees', { params })
 export const createEmployee = (data) => API.post('/employees', data)
 export const updateEmployee = (id, data) => API.put(`/employees/${id}`, data)

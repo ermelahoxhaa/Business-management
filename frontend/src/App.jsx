@@ -15,7 +15,7 @@ import Tasks from './pages/Tasks'
 import Projects from './pages/Projects'
 import Settings from './pages/Settings'
 import Reports from './pages/Reports'
-import Invoices from './pages/invoices'
+import Invoices from './pages/Invoices'
 import { isAuthenticated, getUserRole, getDefaultRouteForRole } from './services/auth'
 
 function ProtectedRoute({ children, allowedRoles }) {

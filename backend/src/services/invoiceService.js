@@ -26,7 +26,7 @@ const normalizeInvoicePayload = ({
     const clientId = client_id ?? ClientId
     const invoiceNumberValue = invoice_number ?? invoiceNumber
 
-    if (clientId !== undefined) payload.client_id = String(clientId).trim()
+    if (clientId !== undefined) payload.client_id = Number(clientId)
     if (invoiceNumberValue !== undefined) payload.invoice_number = String(invoiceNumberValue).trim()
     if (amount !== undefined) payload.amount = parseFloat(amount)
     if (currency !== undefined) payload.currency = String(currency).trim().toUpperCase()
@@ -40,7 +40,7 @@ const normalizeInvoicePayload = ({
 
 export const searchInvoicesService = async (query) => {
     const listQuery = parseListQuery(query, {
-        allowedSort: ['invoice_number', 'client_name', 'amount', 'status', 'due_date', 'created_at', 'updated_at'],
+        allowedSort: ['invoice_number', 'amount', 'status', 'due_date', 'created_at', 'updated_at'],
         defaultSort: 'created_at'
     })
 
@@ -115,7 +115,7 @@ export const updateInvoiceService = async (id, payload) => {
         throw new Error('Client ID is required')
     }
 
-    await updateInvoice(id, payload)
+    await updateInvoice(id, data)
     return getInvoiceById(id)
 }
 
@@ -123,7 +123,7 @@ export const deleteInvoiceService = async (id) => {
     const existingInvoice = await getInvoiceById(id)
     if (!existingInvoice) {
         throw new Error('Invoice not found')
-    } 
-    await deleteInvocie(id)
-    return { deleted: true }
     }
+    await deleteInvoice(id)
+    return { deleted: true }
+}
