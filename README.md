@@ -1,111 +1,107 @@
-# Business Management
+# Business Management System
 
-A full-stack business management application with role-based access and employee workflows.
-
-## Overview
-
-This repository contains two main applications:
-
-- `backend/` - Express.js + Sequelize API server
-- `frontend/` - React + Vite frontend application
-
-The app supports user authentication, employee management, project and task tracking, departments, and comments.
-
-## Features
-
-- Role-based routes for `admin`, `team_leader`, and `employee`
-- Employee dashboard with task status updates and project health overview
-- Admin/team leader dashboard with employee, client, project, task, and department management
-- PostgreSQL support via environment variables
-- Authentication with JWT tokens
-
-## Repository Structure
-
-- `backend/`
-  - `src/app.js` - Express app setup and route registration
-  - `server.js` - server startup, database sync, seed data creation
-  - `src/config/database.js` - Sequelize database configuration
-  - `src/controllers/` - request controllers
-  - `src/services/` - business logic services
-  - `src/repositories/` - database repository layer
-  - `src/models/` - Sequelize models
-  - `src/routes/` - API route definitions
-
-- `frontend/`
-  - `src/App.jsx` - React router and protected route handling
-  - `src/pages/` - application pages, including employee and dashboard views
-  - `src/services/` - API client and auth helpers
-  - `src/components/` - shared UI components
+Web application for tasks, projects, employees, departments, clients and invoices.
 
 ## Prerequisites
 
-- Node.js 18+ or compatible
-- npm
-- PostgreSQL database (recommended)
+Before you start, install:
 
-## Backend Setup
+- [Node.js](https://nodejs.org/) (v18 or newer)
+- npm (comes with Node.js)
+- PostgreSQL
+- MongoDB
 
-1. Install dependencies:
+Create a PostgreSQL database (example name: `business_db`):
+
+```sql
+CREATE DATABASE business_db;
+```
+
+---
+
+## Installation
+
+### Backend
+
+1. Open a terminal in the project folder and go to the backend:
 
 ```bash
 cd backend
 npm install
 ```
 
-2. Create a `.env` file with values like:
+### Frontend
 
-```env
-DB_NAME=postgres
-DB_USER=postgres
-DB_PASSWORD=12345678
-DB_HOST=localhost
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/businessdb
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=admin123
-TEAM_LEADER_EMAIL=team-leader@example.com
-TEAM_LEADER_PASSWORD=teamleader123
-EMPLOYEE_EMAIL=employee@example.com
-EMPLOYEE_PASSWORD=employee123
-```
-
-3. Start the backend server:
-
-```bash
-npm start
-```
-
-The backend listens on port `5000` by default.
-
-## Frontend Setup
-
-1. Install dependencies:
+2. In another terminal (or after backend install):
 
 ```bash
 cd frontend
 npm install
 ```
 
-2. Start the frontend in development mode:
+---
+
+## Configuration
+
+In the `backend` folder, create a file named **`.env`** with your settings:
+
+```env
+PORT=5000
+
+DB_NAME=business_db
+DB_USER=postgres
+DB_PASSWORD=your_postgres_password
+DB_HOST=localhost
+
+MONGO_URI=mongodb://127.0.0.1:27017/business_db
+
+JWT_SECRET=your_secret_key_here
+```
+
+Replace `your_postgres_password` and `your_secret_key_here` with your own values.  
+
+The frontend connects to the API at `http://localhost:5000` (set in `frontend/src/services/api.js`).
+
+---
+
+## Running the project
+
+### 1. Start the backend
 
 ```bash
+cd backend
 npm run dev
 ```
 
-The frontend uses Vite and typically runs on `http://localhost:5173`.
+Wait until you see:
 
-## Notes
+- `PostgreSQL connected`
+- `MongoDB connected`
+- `Server running on port 5000`
 
-- The backend currently uses PostgreSQL from `.env` if configured, with SQLite as an optional fallback.
-- The application seeds default admin, team leader, and employee users on startup when configured values are present.
-- Protected routes determine the default redirect path based on the authenticated role.
+The database tables are created on startup. Team Leader and employee test users are created automatically.
 
-## Useful Commands
+### 2. Start the frontend
 
-- Backend development: `cd backend && npm run dev`
-- Frontend development: `cd frontend && npm run dev`
-- Frontend production build: `cd frontend && npm run build`
+```bash
+cd frontend
+npm run dev
+```
 
-## Contact
+Open the address from the terminal (usually **http://localhost:5173**).
 
-Update this README with your deployment instructions, API docs, or team-specific setup details as needed.
+### 3. Log in
+
+| Role | Email | Password |
+|------|-------|----------|
+| Team leader | team-leader@example.com | teamleader123 |
+| Employee | employee@example.com | employee123 |
+
+For admin, use an account that already has the `admin` role in the database.
+
+
+## If something fails
+
+- Database error → check PostgreSQL is running and `.env` password is correct
+- Port 5000 in use → stop the old backend process
+- MongoDB message → install MongoDB or start the `MongoDB` service on Windows
