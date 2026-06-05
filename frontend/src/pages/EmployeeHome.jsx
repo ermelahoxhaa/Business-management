@@ -15,10 +15,19 @@ import {
   MessageSquare,
   PlayCircle,
   Settings,
-  UserRound
+  UserRound,
+  Zap
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { createComment, getComments, getMyEmployeeProfile, getMyProjects, getMyTasks, updateMyTaskStatus } from '../services/api'
+import {
+  createComment,
+  getActivityStats,
+  getComments,
+  getMyEmployeeProfile,
+  getMyProjects,
+  getMyTasks,
+  updateMyTaskStatus
+} from '../services/api'
 import { unwrapList } from '../utils/listResponse'
 import { getCurrentUser, getRoleLabel, logout } from '../services/auth'
 
@@ -97,9 +106,21 @@ const formatCommentAuthor = (comment, currentUserId) => {
   return name || 'Team member'
 }
 
+const statCardClass =
+  'rounded-3xl border border-white/10 bg-slate-900/90 p-6 shadow-xl ring-1 ring-white/5'
+
+const navItems = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'my-tasks', label: 'My Tasks', icon: ListChecks },
+  { id: 'deadlines', label: 'Deadlines', icon: CalendarClock },
+  { id: 'projects', label: 'Projects', icon: Briefcase },
+  { id: 'notifications', label: 'Notifications', icon: Bell }
+]
+
 export default function EmployeeHome() {
   const navigate = useNavigate()
   const currentUser = getCurrentUser()
+  const [activeSection, setActiveSection] = useState('overview')
   const [tasks, setTasks] = useState([])
   const [projects, setProjects] = useState([])
   const [profile, setProfile] = useState(null)
@@ -113,21 +134,24 @@ export default function EmployeeHome() {
   const [commentDrafts, setCommentDrafts] = useState({})
   const [commentLoadingId, setCommentLoadingId] = useState(null)
   const [savingCommentId, setSavingCommentId] = useState(null)
+  const [activityStats, setActivityStats] = useState({ recentCount: 0, todayCount: 0 })
 
   const loadEmployeeData = useCallback(async () => {
     setLoading(true)
     setError('')
 
     try {
-      const [tasksResponse, projectsResponse, profileResponse] = await Promise.all([
+      const [tasksResponse, projectsResponse, profileResponse, activityResponse] = await Promise.all([
         getMyTasks(),
         getMyProjects(),
-        getMyEmployeeProfile().catch(() => ({ data: null }))
+        getMyEmployeeProfile().catch(() => ({ data: null })),
+        getActivityStats().catch(() => ({ data: { recentCount: 0, todayCount: 0 } }))
       ])
 
       setTasks(unwrapList(tasksResponse).items)
       setProjects(projectsResponse.data || [])
       setProfile(profileResponse.data || null)
+      setActivityStats(activityResponse.data || { recentCount: 0, todayCount: 0 })
     } catch (err) {
       console.error(err)
       setError(err.response?.data?.message || 'Unable to load your workspace right now.')
@@ -219,6 +243,19 @@ export default function EmployeeHome() {
 
     return [...overdueItems, ...dueTodayItems, ...pendingItems].slice(0, 4)
   }, [deadlineGroups, tasks])
+
+  const statCards = useMemo(() => [
+    { label: 'My Projects', value: projects.length, icon: Briefcase, color: 'text-sky-300', hint: 'Projects linked to your tasks' },
+    { label: 'Assigned Tasks', value: summary.total, icon: ListChecks, color: 'text-sky-300' },
+    { label: 'To Do', value: summary.pending, icon: Clock3, color: 'text-amber-300' },
+    { label: 'In Progress', value: summary.inProgress, icon: PlayCircle, color: 'text-blue-300' },
+    { label: 'Completed', value: summary.completed, icon: CheckCircle2, color: 'text-emerald-300' },
+    { label: 'Overdue', value: summary.overdue, icon: AlertTriangle, color: 'text-rose-300' },
+    { label: 'Due Today', value: deadlineGroups.today.length, icon: CalendarClock, color: 'text-orange-300', hint: 'Tasks due today' },
+    { label: 'Upcoming (7d)', value: deadlineGroups.upcoming.length, icon: CircleDot, color: 'text-violet-300', hint: 'Deadlines in the next week' },
+    { label: 'Your Activity (7d)', value: activityStats.recentCount, icon: Zap, color: 'text-cyan-300', hint: 'Your recent actions in the workspace' },
+    { label: 'Actions Today', value: activityStats.todayCount, icon: Bell, color: 'text-indigo-300', hint: 'Actions you performed today' }
+  ], [projects.length, summary, deadlineGroups, activityStats])
 
   const fullName = [currentUser?.first_name, currentUser?.last_name].filter(Boolean).join(' ') || 'Employee'
   const firstName = currentUser?.first_name || fullName
@@ -330,23 +367,23 @@ export default function EmployeeHome() {
           </div>
 
           <nav className="mt-8 space-y-2">
-            {[
-              { label: 'Overview', icon: LayoutDashboard, href: '#overview' },
-              { label: 'My Tasks', icon: ListChecks, href: '#my-tasks' },
-              { label: 'Deadlines', icon: CalendarClock, href: '#deadlines' },
-              { label: 'Projects', icon: Briefcase, href: '#projects' },
-              { label: 'Notifications', icon: Bell, href: '#notifications' }
-            ].map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon
+              const isActive = activeSection === item.id
               return (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveSection(item.id)}
+                  className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                    isActive
+                      ? 'bg-slate-800 text-white ring-1 ring-white/10'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
-                </a>
+                </button>
               )
             })}
             <Link
@@ -382,59 +419,49 @@ export default function EmployeeHome() {
         </aside>
 
         <main className="space-y-6">
-          <section id="overview" className="rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-2xl sm:p-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-300">Employee dashboard</p>
-                <h1 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">Welcome back, {firstName}</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                  Review your assigned work, update task progress, and keep communication on each task in one place.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-3xl bg-slate-950/70 p-5 ring-1 ring-white/10">
-                  <p className="text-sm text-slate-400">My projects</p>
-                  <p className="mt-2 text-3xl font-semibold text-white">{projects.length}</p>
-                </div>
-                <div className="rounded-3xl bg-slate-950/70 p-5 ring-1 ring-white/10">
-                  <p className="text-sm text-slate-400">My tasks</p>
-                  <p className="mt-2 text-3xl font-semibold text-white">{summary.total}</p>
-                </div>
-              </div>
+          {(error || notice) && activeSection !== 'overview' && (
+            <div className={`rounded-2xl p-4 text-sm ${error ? 'bg-rose-500/10 text-rose-100 ring-1 ring-rose-500/20' : 'bg-emerald-500/10 text-emerald-100 ring-1 ring-emerald-500/20'}`}>
+              {error || notice}
             </div>
+          )}
 
-            {(error || notice) && (
-              <div className={`mt-6 rounded-2xl p-4 text-sm ${error ? 'bg-rose-500/10 text-rose-100 ring-1 ring-rose-500/20' : 'bg-emerald-500/10 text-emerald-100 ring-1 ring-emerald-500/20'}`}>
-                {error || notice}
-              </div>
-            )}
-          </section>
+          {activeSection === 'overview' && (
+            <>
+              <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl backdrop-blur-xl">
+                <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">Employee Dashboard</p>
+                <h1 className="mt-4 text-4xl font-semibold text-white">Welcome back, {firstName}</h1>
+                <p className="mt-3 max-w-2xl text-sm text-slate-300">
+                  Your personal overview for assigned tasks, deadlines, and recent workspace activity.
+                  Open My Tasks, Deadlines, or Projects from the sidebar for full details and actions.
+                </p>
+              </section>
 
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            {[
-              { label: 'Total assigned', value: summary.total, icon: ListChecks, color: 'text-sky-300' },
-              { label: 'To Do', value: summary.pending, icon: Clock3, color: 'text-amber-300' },
-              { label: 'In progress', value: summary.inProgress, icon: PlayCircle, color: 'text-blue-300' },
-              { label: 'Completed', value: summary.completed, icon: CheckCircle2, color: 'text-emerald-300' },
-              { label: 'Overdue', value: summary.overdue, icon: AlertTriangle, color: 'text-rose-300' }
-            ].map((item) => {
-              const Icon = item.icon
-              return (
-                <div key={item.label} className="rounded-3xl border border-white/10 bg-slate-900/90 p-5 shadow-xl">
-                  <Icon className={`h-5 w-5 ${item.color}`} />
-                  <p className="mt-4 text-sm text-slate-400">{item.label}</p>
-                  <p className="mt-2 text-3xl font-semibold text-white">{item.value}</p>
-                </div>
-              )
-            })}
-          </section>
+              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {statCards.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <div key={item.label} className={statCardClass}>
+                      <Icon className={`h-5 w-5 ${item.color}`} />
+                      <p className="mt-5 text-sm text-slate-400">{item.label}</p>
+                      <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
+                      {item.hint && (
+                        <p className="mt-2 text-xs leading-5 text-slate-500">{item.hint}</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </section>
+            </>
+          )}
 
-          <section className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
-            <div id="my-tasks" className="rounded-[2rem] border border-slate-200 bg-white p-6 text-slate-900 shadow-xl">
+          {activeSection === 'my-tasks' && (
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-6 text-slate-900 shadow-xl">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold">My Tasks</h2>
-                  <p className="mt-1 text-sm text-slate-500">Move work from To Do to In Progress, then Completed. Use comments to discuss each task.</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Move work from To Do to In Progress, then Completed. Use comments to discuss each task.
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -562,73 +589,78 @@ export default function EmployeeHome() {
                   </div>
                 </div>
               )}
-            </div>
+            </section>
+          )}
 
-            <aside className="space-y-6">
-              <section id="deadlines" className="rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-xl">
-                <h2 className="text-2xl font-semibold text-white">Today's work</h2>
-                <div className="mt-5 space-y-4">
-                  <DeadlineList title="Due today" tasks={deadlineGroups.today} empty="No tasks due today." projectById={projectById} />
-                  <DeadlineList title="Upcoming deadlines" tasks={deadlineGroups.upcoming.slice(0, 4)} empty="No upcoming deadlines." projectById={projectById} />
-                  <DeadlineList title="Overdue tasks" tasks={deadlineGroups.overdue.slice(0, 4)} empty="No overdue tasks." projectById={projectById} danger />
+          {activeSection === 'deadlines' && (
+            <section className="rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-xl">
+              <h2 className="text-2xl font-semibold text-white">Deadlines</h2>
+              <p className="mt-1 text-sm text-slate-400">Track what is due today, coming up soon, or already overdue.</p>
+              <div className="mt-5 grid gap-4 lg:grid-cols-3">
+                <DeadlineList title="Due today" tasks={deadlineGroups.today} empty="No tasks due today." projectById={projectById} />
+                <DeadlineList title="Upcoming deadlines" tasks={deadlineGroups.upcoming} empty="No upcoming deadlines." projectById={projectById} />
+                <DeadlineList title="Overdue tasks" tasks={deadlineGroups.overdue} empty="No overdue tasks." projectById={projectById} danger />
+              </div>
+            </section>
+          )}
+
+          {activeSection === 'projects' && (
+            <section className="rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-xl">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-white">My Projects</h2>
+                  <p className="mt-1 text-sm text-slate-400">Projects connected to your assigned tasks.</p>
                 </div>
-              </section>
+                <p className="text-sm text-slate-400">{projectSummaries.length} project{projectSummaries.length === 1 ? '' : 's'}</p>
+              </div>
 
-              <section id="notifications" className="rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-xl">
-                <h2 className="text-2xl font-semibold text-white">Work updates</h2>
-                <p className="mt-1 text-sm text-slate-400">Reminders built from your current assignments and due dates.</p>
-                <div className="mt-5 space-y-3">
-                  {notifications.length === 0 ? (
-                    <p className="rounded-3xl bg-slate-950/70 p-4 text-sm text-slate-400">You have no active reminders right now.</p>
-                  ) : (
-                    notifications.map((item) => (
-                      <div key={item.id} className="rounded-3xl bg-slate-950/70 p-4 ring-1 ring-white/10">
-                        <p className="text-sm font-semibold text-white">{item.title}</p>
-                        <p className="mt-1 text-sm text-slate-400">{item.message}</p>
-                      </div>
-                    ))
-                  )}
+              {projectSummaries.length === 0 ? (
+                <div className="mt-6 rounded-3xl border border-dashed border-slate-700 bg-slate-950/70 p-8 text-center text-slate-400">
+                  No project assignments found yet.
                 </div>
-              </section>
-            </aside>
-          </section>
-
-          <section id="projects" className="rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-xl">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-2xl font-semibold text-white">Project preview</h2>
-                <p className="mt-1 text-sm text-slate-400">Projects connected to your assigned tasks.</p>
-              </div>
-              <p className="text-sm text-slate-400">{projectSummaries.length} project{projectSummaries.length === 1 ? '' : 's'}</p>
-            </div>
-
-            {projectSummaries.length === 0 ? (
-              <div className="mt-6 rounded-3xl border border-dashed border-slate-700 bg-slate-950/70 p-8 text-center text-slate-400">
-                No project assignments found yet.
-              </div>
-            ) : (
-              <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {projectSummaries.map((project) => (
-                  <article key={project.id} className="rounded-3xl bg-slate-950/70 p-5 ring-1 ring-white/10">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="font-semibold text-white">{project.name}</h3>
-                        <p className="mt-1 text-sm text-slate-400">{project.tasks} assigned task{project.tasks === 1 ? '' : 's'}</p>
+              ) : (
+                <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {projectSummaries.map((project) => (
+                    <article key={project.id} className="rounded-3xl bg-slate-950/70 p-5 ring-1 ring-white/10">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="font-semibold text-white">{project.name}</h3>
+                          <p className="mt-1 text-sm text-slate-400">{project.tasks} assigned task{project.tasks === 1 ? '' : 's'}</p>
+                        </div>
+                        <span className="rounded-full bg-sky-400/10 px-3 py-1 text-xs font-semibold text-sky-200 ring-1 ring-sky-400/20">{project.status}</span>
                       </div>
-                      <span className="rounded-full bg-sky-400/10 px-3 py-1 text-xs font-semibold text-sky-200 ring-1 ring-sky-400/20">{project.status}</span>
+                      <div className="mt-5 flex items-center justify-between text-sm text-slate-400">
+                        <span>Progress</span>
+                        <span className="font-semibold text-white">{project.progress}%</span>
+                      </div>
+                      <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-800">
+                        <div className="h-full rounded-full bg-sky-400" style={{ width: `${project.progress}%` }} />
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {activeSection === 'notifications' && (
+            <section className="rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-xl">
+              <h2 className="text-2xl font-semibold text-white">Work updates</h2>
+              <p className="mt-1 text-sm text-slate-400">Reminders built from your current assignments and due dates.</p>
+              <div className="mt-5 space-y-3">
+                {notifications.length === 0 ? (
+                  <p className="rounded-3xl bg-slate-950/70 p-4 text-sm text-slate-400">You have no active reminders right now.</p>
+                ) : (
+                  notifications.map((item) => (
+                    <div key={item.id} className="rounded-3xl bg-slate-950/70 p-4 ring-1 ring-white/10">
+                      <p className="text-sm font-semibold text-white">{item.title}</p>
+                      <p className="mt-1 text-sm text-slate-400">{item.message}</p>
                     </div>
-                    <div className="mt-5 flex items-center justify-between text-sm text-slate-400">
-                      <span>Progress</span>
-                      <span className="font-semibold text-white">{project.progress}%</span>
-                    </div>
-                    <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-800">
-                      <div className="h-full rounded-full bg-sky-400" style={{ width: `${project.progress}%` }} />
-                    </div>
-                  </article>
-                ))}
+                  ))
+                )}
               </div>
-            )}
-          </section>
+            </section>
+          )}
         </main>
       </div>
     </div>
