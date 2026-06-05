@@ -1,4 +1,4 @@
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useState } from 'react'
 import './Header.css'
 import { getUserRole, isAuthenticated, logout, getToken } from '../services/auth'
@@ -62,8 +62,10 @@ function NotificationModal({ open, onClose, items, onMarkRead }) {
 
 export default function Header() {
   const navigate = useNavigate()
+  const location = useLocation()
   const isLoggedIn = isAuthenticated()
   const userRole = getUserRole()
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup'
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -122,14 +124,16 @@ export default function Header() {
       <header className="header">
         <div className="header__brand">Business-Management</div>
 
-        <nav className="flex gap-6 text-gray-600">
-          <Link to={isLoggedIn && userRole === 'employee' ? '/home' : '/'} className="hover:text-black transition">
-            Home
-          </Link>
-          <Link to="/about" className="hover:text-black transition">
-            About Us
-          </Link>
-        </nav>
+        {!isAuthPage && (
+          <nav className="flex gap-6">
+            <Link
+              to={isLoggedIn && userRole === 'employee' ? '/home' : '/'}
+              className="header__nav-link"
+            >
+              Home
+            </Link>
+          </nav>
+        )}
 
         <div className="header__actions">
           {isLoggedIn && (
@@ -162,12 +166,20 @@ export default function Header() {
             </>
           )}
 
-          {!isLoggedIn ? (
+          {!isLoggedIn && isAuthPage && (
+            <button onClick={() => navigate('/')} className="header__button header__button--ghost">
+              Back to Homepage
+            </button>
+          )}
+
+          {!isLoggedIn && !isAuthPage && (
             <button onClick={() => navigate('/login')} className="header__button">
               Login
             </button>
-          ) : (
-            <button onClick={handleLogout} className="header__button">
+          )}
+
+          {isLoggedIn && (
+            <button onClick={handleLogout} className="header__button header__button--ghost">
               Logout
             </button>
           )}

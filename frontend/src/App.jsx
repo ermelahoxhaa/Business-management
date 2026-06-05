@@ -5,7 +5,6 @@ import Footer from './components/Footer'
 
 import Home from './pages/Home'
 import EmployeeHome from './pages/EmployeeHome'
-import About from './pages/About'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
@@ -55,7 +54,6 @@ function App() {
             <EmployeeHome />
           </ProtectedRoute>
         } />
-        <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 

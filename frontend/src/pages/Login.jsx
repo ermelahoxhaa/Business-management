@@ -34,50 +34,56 @@ export default function Login() {
   }
 
   return (
-    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-stone-700 via-neutral-700 to-zinc-800 px-4 py-8 sm:px-6">
-      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-stone-200/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-8 h-64 w-64 rounded-full bg-zinc-200/20 blur-3xl" />
-      <form
-        onSubmit={handleSubmit}
-        className="relative z-10 w-full max-w-md space-y-4 rounded-2xl border border-stone-200/30 bg-stone-100/90 p-6 shadow-2xl backdrop-blur-md sm:p-8"
-      >
-        <h2 className="text-center text-2xl font-semibold text-stone-800">Welcome Back</h2>
-        <p className="text-center text-sm text-stone-600">Login to continue to your dashboard.</p>
+    <div className="relative min-h-[calc(100dvh-4.5rem)] overflow-hidden bg-slate-950 px-4 py-12 sm:px-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-sky-500/20 to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute right-0 bottom-0 h-72 w-72 rounded-full bg-slate-700/30 blur-3xl" />
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 placeholder-stone-400 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-          required
-        />
-
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-          className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2.5 text-stone-800 placeholder-stone-400 transition focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-          required
-        />
-
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-zinc-800 py-2.5 text-sm font-medium text-stone-100 transition duration-200 hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-300/40"
+      <div className="relative z-10 mx-auto flex max-w-md flex-col justify-center">
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl backdrop-blur-xl sm:p-8"
         >
-          Login
-        </button>
+          <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">Welcome back</p>
+          <h2 className="mt-3 text-2xl font-semibold text-white">Sign in to your workspace</h2>
+          <p className="mt-2 text-sm text-slate-400">Use your account to access the dashboard and team tools.</p>
 
-        <p className="text-center text-sm text-stone-600">
-          Don&apos;t have an account?{' '}
-          <Link to="/signup" className="font-medium text-zinc-700 hover:underline">
-            Sign up
-          </Link>
-        </p>
-      </form>
+          <div className="mt-6 space-y-4">
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={form.email}
+              onChange={handleChange}
+              className="w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 transition focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              required
+            />
+
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              className="w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 transition focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="mt-6 w-full rounded-2xl bg-sky-500 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
+          >
+            Login
+          </button>
+
+          <p className="mt-5 text-center text-sm text-slate-400">
+            Don&apos;t have an account?{' '}
+            <Link to="/signup" className="font-medium text-sky-300 hover:text-sky-200">
+              Sign up
+            </Link>
+          </p>
+        </form>
+      </div>
     </div>
   )
 }
