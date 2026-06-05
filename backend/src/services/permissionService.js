@@ -34,7 +34,8 @@ export const PERMISSION_CODES = [
   'invoices.create',
   'invoices.update',
   'client_projects.manage',
-  'notifications.read'
+  'notifications.read',
+  'notifications.send'
 ]
 
 const ROLE_PERMISSION_MAP = {

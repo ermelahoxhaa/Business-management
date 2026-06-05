@@ -190,3 +190,19 @@
   color: #94a3b8;
   font-size: 0.9rem;
 }
+
+.notification-panel {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.9);
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.35);
+}
+
+.notification-panel__content {
+  padding: 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+  max-height: 32rem;
+  overflow-y: auto;
+}

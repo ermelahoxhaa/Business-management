@@ -19,6 +19,7 @@ import {
   Zap
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import NotificationPanel from '../components/Notification'
 import {
   createComment,
   getActivityStats,
@@ -135,6 +136,7 @@ export default function EmployeeHome() {
   const [commentLoadingId, setCommentLoadingId] = useState(null)
   const [savingCommentId, setSavingCommentId] = useState(null)
   const [activityStats, setActivityStats] = useState({ recentCount: 0, todayCount: 0 })
+  const [unreadCount, setUnreadCount] = useState(0)
 
   const loadEmployeeData = useCallback(async () => {
     setLoading(true)
@@ -218,31 +220,6 @@ export default function EmployeeHome() {
       }
     })
   }, [projectById, tasks])
-
-  const notifications = useMemo(() => {
-    const overdueItems = deadlineGroups.overdue.slice(0, 2).map((task) => ({
-      id: `overdue-${task.id}`,
-      title: 'Overdue task',
-      message: `${task.title || 'Untitled task'} was due ${formatDate(task.due_date)}`
-    }))
-
-    const dueTodayItems = deadlineGroups.today.slice(0, 2).map((task) => ({
-      id: `today-${task.id}`,
-      title: 'Due today',
-      message: `${task.title || 'Untitled task'} is due today`
-    }))
-
-    const pendingItems = tasks
-      .filter((task) => task.status === 'todo')
-      .slice(0, 2)
-      .map((task) => ({
-        id: `pending-${task.id}`,
-        title: 'Waiting to start',
-        message: task.title || 'Untitled task'
-      }))
-
-    return [...overdueItems, ...dueTodayItems, ...pendingItems].slice(0, 4)
-  }, [deadlineGroups, tasks])
 
   const statCards = useMemo(() => [
     { label: 'My Projects', value: projects.length, icon: Briefcase, color: 'text-sky-300', hint: 'Projects linked to your tasks' },
@@ -375,14 +352,21 @@ export default function EmployeeHome() {
                   key={item.id}
                   type="button"
                   onClick={() => setActiveSection(item.id)}
-                  className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                  className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm font-medium transition ${
                     isActive
                       ? 'bg-slate-800 text-white ring-1 ring-white/10'
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
+                  <span className="flex items-center gap-3">
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </span>
+                  {item.id === 'notifications' && unreadCount > 0 && (
+                    <span className="rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white">
+                      {unreadCount}
+                    </span>
+                  )}
                 </button>
               )
             })}
@@ -643,24 +627,13 @@ export default function EmployeeHome() {
             </section>
           )}
 
-          {activeSection === 'notifications' && (
-            <section className="rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-xl">
-              <h2 className="text-2xl font-semibold text-white">Work updates</h2>
-              <p className="mt-1 text-sm text-slate-400">Reminders built from your current assignments and due dates.</p>
-              <div className="mt-5 space-y-3">
-                {notifications.length === 0 ? (
-                  <p className="rounded-3xl bg-slate-950/70 p-4 text-sm text-slate-400">You have no active reminders right now.</p>
-                ) : (
-                  notifications.map((item) => (
-                    <div key={item.id} className="rounded-3xl bg-slate-950/70 p-4 ring-1 ring-white/10">
-                      <p className="text-sm font-semibold text-white">{item.title}</p>
-                      <p className="mt-1 text-sm text-slate-400">{item.message}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-          )}
+          <section
+            className={`rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-xl ${
+              activeSection === 'notifications' ? '' : 'hidden'
+            }`}
+          >
+            <NotificationPanel onUnreadCountChange={setUnreadCount} />
+          </section>
         </main>
       </div>
     </div>

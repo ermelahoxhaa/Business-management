@@ -144,6 +144,8 @@ export const markNotificationRead = (id) => API.patch(`/notifications/${id}/read
 
 export const markAllNotificationsRead = () => API.patch('/notifications/read-all')
 
+export const sendNotification = (payload) => API.post('/notifications/send', payload)
+
 export const getActivity = () => API.get('/activity')
 
 export const getActivityStats = () => API.get('/activity/stats')

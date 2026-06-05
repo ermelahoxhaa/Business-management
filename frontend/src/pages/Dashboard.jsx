@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import NotificationPanel from '../components/Notification'
 import {
   getActivityStats,
   getClients,
@@ -28,6 +29,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [role, setRole] = useState('')
+  const [activeSection, setActiveSection] = useState('overview')
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     const loadData = async () => {
@@ -198,8 +201,36 @@ export default function Dashboard() {
             </div>
 
             <nav className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setActiveSection('overview')}
+                className={`block w-full rounded-3xl border px-4 py-3 text-left text-sm font-medium transition ${
+                  activeSection === 'overview'
+                    ? 'border-sky-500/30 bg-slate-800 text-white'
+                    : 'border-slate-800 bg-slate-900/80 text-slate-200 hover:border-slate-600 hover:bg-slate-800'
+                }`}
+              >
+                <span className="mr-2">📊</span> Dashboard Overview
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveSection('notifications')}
+                className={`flex w-full items-center justify-between rounded-3xl border px-4 py-3 text-left text-sm font-medium transition ${
+                  activeSection === 'notifications'
+                    ? 'border-sky-500/30 bg-slate-800 text-white'
+                    : 'border-slate-800 bg-slate-900/80 text-slate-200 hover:border-slate-600 hover:bg-slate-800'
+                }`}
+              >
+                <span><span className="mr-2">🔔</span> Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
               {[
-                { label: 'Dashboard Overview', icon: '📊', path: '/dashboard' },
                 { label: 'Client Management', icon: '🏠', path: '/client' },
                 { label: 'Invoice Management', icon: '💰', path: '/invoices' },
                 { label: 'Projects', icon: '📁', path: '/projects' },
@@ -227,33 +258,48 @@ export default function Dashboard() {
           </aside>
 
           <main className="space-y-6">
-            <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl backdrop-blur-xl">
-              <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">
-                {role === 'admin' ? 'Admin Dashboard' : 'Team Leader Dashboard'}
-              </p>
-              <h1 className="mt-4 text-4xl font-semibold text-white">
-                {role === 'admin' ? 'Business overview' : 'Team workflow overview'}
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm text-slate-300">
-                {role === 'admin'
-                  ? 'High-level statistics for projects, tasks, clients, employees, and recent platform activity.'
-                  : 'Track your team metrics and recent workspace activity. Open Projects or Tasks for full lists and forms.'}
-              </p>
-            </section>
+            {activeSection === 'overview' && (
+              <>
+                <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-8 shadow-2xl backdrop-blur-xl">
+                  <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">
+                    {role === 'admin' ? 'Admin Dashboard' : 'Team Leader Dashboard'}
+                  </p>
+                  <h1 className="mt-4 text-4xl font-semibold text-white">
+                    {role === 'admin' ? 'Business overview' : 'Team workflow overview'}
+                  </h1>
+                  <p className="mt-3 max-w-2xl text-sm text-slate-300">
+                    {role === 'admin'
+                      ? 'High-level statistics for projects, tasks, clients, employees, and recent platform activity.'
+                      : 'Track your team metrics and recent workspace activity. Open Projects or Tasks for full lists and forms.'}
+                  </p>
+                </section>
 
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {statCards.map((item) => (
-                <div key={item.label} className={statCardClass}>
-                  <div className={`inline-flex rounded-3xl bg-gradient-to-r ${item.color} px-3 py-2 text-sm font-semibold text-slate-900`}>
-                    {item.icon}
-                  </div>
-                  <p className="mt-5 text-sm text-slate-400">{item.label}</p>
-                  <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
-                  {item.hint && (
-                    <p className="mt-2 text-xs leading-5 text-slate-500">{item.hint}</p>
-                  )}
-                </div>
-              ))}
+                <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {statCards.map((item) => (
+                    <div key={item.label} className={statCardClass}>
+                      <div className={`inline-flex rounded-3xl bg-gradient-to-r ${item.color} px-3 py-2 text-sm font-semibold text-slate-900`}>
+                        {item.icon}
+                      </div>
+                      <p className="mt-5 text-sm text-slate-400">{item.label}</p>
+                      <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
+                      {item.hint && (
+                        <p className="mt-2 text-xs leading-5 text-slate-500">{item.hint}</p>
+                      )}
+                    </div>
+                  ))}
+                </section>
+              </>
+            )}
+
+            <section
+              className={`rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl backdrop-blur-xl sm:p-8 ${
+                activeSection === 'notifications' ? '' : 'hidden'
+              }`}
+            >
+              <NotificationPanel
+                showAdminSend={role === 'admin'}
+                onUnreadCountChange={setUnreadCount}
+              />
             </section>
           </main>
         </section>

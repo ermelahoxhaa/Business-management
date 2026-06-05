@@ -1,5 +1,8 @@
 import { Op } from 'sequelize'
 import Notification from '../models/Notification.js'
+import User from '../models/User.js'
+import UserRole from '../models/UserRole.js'
+import Role from '../models/Role.js'
 import { emitToUser } from '../config/socket.js'
 import { logActivity } from './activityService.js'
 
@@ -79,4 +82,58 @@ export const markAllNotificationsRead = async (userId) => {
     { read_at: new Date() },
     { where: { user_id: userId, read_at: { [Op.is]: null } } }
   )
+}
+
+const resolveTargetUserIds = async ({ target, role, userId }) => {
+  if (target === 'user') {
+    if (!userId) throw new Error('userId is required for a single-user notification')
+    return [Number(userId)]
+  }
+
+  if (target === 'all') {
+    const users = await User.findAll({ attributes: ['id'] })
+    return users.map((user) => user.id)
+  }
+
+  if (target === 'role') {
+    if (!role) throw new Error('role is required for role-based notifications')
+    const roleRecord = await Role.findOne({ where: { name: role } })
+    if (!roleRecord) throw new Error('Invalid role')
+
+    const links = await UserRole.findAll({
+      where: { role_id: roleRecord.id },
+      attributes: ['user_id']
+    })
+    return links.map((link) => link.user_id)
+  }
+
+  throw new Error('Invalid notification target')
+}
+
+export const sendNotifications = async ({ title, message, target, role, userId }) => {
+  const trimmedTitle = title?.trim()
+  const trimmedMessage = message?.trim()
+
+  if (!trimmedTitle || !trimmedMessage) {
+    throw new Error('Title and message are required')
+  }
+
+  const recipientIds = await resolveTargetUserIds({ target, role, userId })
+  if (!recipientIds.length) {
+    throw new Error('No recipients found for this notification')
+  }
+
+  let sentCount = 0
+  for (const recipientId of recipientIds) {
+    await createNotification({
+      userId: recipientId,
+      title: trimmedTitle,
+      message: trimmedMessage,
+      entityType: 'announcement',
+      entityId: null
+    })
+    sentCount += 1
+  }
+
+  return { sentCount, recipientIds }
 }
