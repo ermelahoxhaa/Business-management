@@ -1,5 +1,6 @@
 import { Server } from 'socket.io'
 import { verifyAccessToken } from '../utils/tokens.js'
+import { upsertUserPresence } from '../services/eventLogService.js'
 
 let ioInstance = null
 
@@ -24,6 +25,11 @@ export const initSocket = (httpServer) => {
 
   ioInstance.on('connection', (socket) => {
     socket.join(`user:${socket.user.id}`)
+    upsertUserPresence({ userId: socket.user.id, status: 'online' })
+
+    socket.on('disconnect', () => {
+      upsertUserPresence({ userId: socket.user.id, status: 'offline' })
+    })
   })
 
   return ioInstance

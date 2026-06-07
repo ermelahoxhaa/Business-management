@@ -7,6 +7,7 @@ import { buildDownload } from '../utils/fileFormats.js'
 import { buildReportPdf } from '../utils/reportPdf.js'
 import ReportRun from '../models/ReportRun.js'
 import { logAudit } from './auditService.js'
+import { logWorkspaceEvent } from './eventLogService.js'
 
 const allowedReportFormats = ['xlsx', 'csv', 'json', 'pdf']
 
@@ -300,6 +301,15 @@ const recordReportRun = async ({ type, format, filters, rowCount, runMode, userI
     entityType: 'report',
     entityId: run.id,
     metadata: { report_type: type, format: format || null, row_count: rowCount }
+  })
+
+  await logWorkspaceEvent({
+    userId,
+    action: runMode === 'export' ? 'report_export' : 'report_preview',
+    entityType: 'report',
+    entityId: run.id,
+    message: `${runMode === 'export' ? 'Exported' : 'Previewed'} ${type} report`,
+    metadata: { format: format || null, row_count: rowCount }
   })
 
   return run

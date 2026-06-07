@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { getProjects, getTasks, createProject, updateProject, deleteProject, getUsers } from '../services/api'
+import {
+  getProjects,
+  getTasks,
+  createProject,
+  updateProject,
+  deleteProject,
+  getUsers,
+  getProjectMembers,
+  addProjectMember,
+  removeProjectMember
+} from '../services/api'
 import { getUserRole, getCurrentUser } from '../services/auth'
 import ListSearchPanel from '../components/ListSearchPanel'
 import DataTransferBar from '../components/DataTransferBar'
@@ -30,6 +40,9 @@ export default function Projects() {
   const [listPage, setListPage] = useState(1)
   const emptySearch = { search: '', sort: 'created_at', order: 'desc' }
   const [searchQuery, setSearchQuery] = useState(emptySearch)
+  const [membersPanelId, setMembersPanelId] = useState(null)
+  const [projectMembers, setProjectMembers] = useState([])
+  const [memberForm, setMemberForm] = useState({ user_id: '', role: 'member' })
 
   const loadProjects = async (query = searchQuery, page = listPage) => {
     try {
@@ -176,6 +189,61 @@ export default function Projects() {
       return user.first_name
     }
     return userId ? `User #${userId}` : 'Unknown user'
+  }
+
+  const loadProjectMembers = async (projectId) => {
+    try {
+      const response = await getProjectMembers(projectId)
+      setProjectMembers(response.data || [])
+    } catch (err) {
+      console.error('Error loading project members:', err)
+      setProjectMembers([])
+    }
+  }
+
+  const handleToggleMembersPanel = async (projectId) => {
+    if (membersPanelId === projectId) {
+      setMembersPanelId(null)
+      setProjectMembers([])
+      return
+    }
+
+    setMembersPanelId(projectId)
+    setMemberForm({ user_id: '', role: 'member' })
+    await loadProjectMembers(projectId)
+  }
+
+  const handleAddProjectMember = async (projectId) => {
+    if (!memberForm.user_id) {
+      alert('Select a user to add')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await addProjectMember(projectId, {
+        user_id: Number(memberForm.user_id),
+        role: memberForm.role
+      })
+      setMemberForm({ user_id: '', role: 'member' })
+      await loadProjectMembers(projectId)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Unable to add project member')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleRemoveProjectMember = async (projectId, memberId) => {
+    setSaving(true)
+    try {
+      await removeProjectMember(projectId, memberId)
+      await loadProjectMembers(projectId)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Unable to remove project member')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -385,6 +453,82 @@ export default function Projects() {
                       </div>
                       <p className="text-sm text-slate-400">Progress: {stats.progress}%</p>
                     </div>
+
+                    {(isAdmin || isTeamLeader) && (
+                      <div className="mt-6 rounded-3xl border border-slate-800 bg-slate-950/50 p-4">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleMembersPanel(project.id)}
+                          className="text-sm font-semibold text-sky-300 transition hover:text-sky-200"
+                        >
+                          {membersPanelId === project.id ? 'Hide members' : 'Manage members'}
+                        </button>
+
+                        {membersPanelId === project.id && (
+                          <div className="mt-4 space-y-3">
+                            {projectMembers.length === 0 ? (
+                              <p className="text-xs text-slate-500">No members assigned yet.</p>
+                            ) : (
+                              <ul className="space-y-2">
+                                {projectMembers.map((member) => (
+                                  <li
+                                    key={member.id}
+                                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 px-3 py-2 text-sm text-slate-200"
+                                  >
+                                    <span>
+                                      {member.user
+                                        ? `${member.user.first_name || ''} ${member.user.last_name || ''}`.trim() || member.user.email
+                                        : `User #${member.user_id}`}
+                                      {' · '}
+                                      <span className="text-slate-400">{member.role}</span>
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveProjectMember(project.id, member.id)}
+                                      disabled={saving}
+                                      className="text-xs text-rose-300 hover:text-rose-200 disabled:opacity-50"
+                                    >
+                                      Remove
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+
+                            <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+                              <select
+                                value={memberForm.user_id}
+                                onChange={(e) => setMemberForm((current) => ({ ...current, user_id: e.target.value }))}
+                                className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                              >
+                                <option value="">Select user</option>
+                                {users.map((user) => (
+                                  <option key={user.id} value={user.id}>
+                                    {getUserName(user.id)}
+                                  </option>
+                                ))}
+                              </select>
+                              <select
+                                value={memberForm.role}
+                                onChange={(e) => setMemberForm((current) => ({ ...current, role: e.target.value }))}
+                                className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                              >
+                                <option value="member">Member</option>
+                                <option value="owner">Owner</option>
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => handleAddProjectMember(project.id)}
+                                disabled={saving}
+                                className="rounded-2xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-50"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <div className="mt-6 grid gap-3 sm:grid-cols-2">
                       {editingId === project.id ? (

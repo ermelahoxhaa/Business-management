@@ -1,7 +1,12 @@
 import {
     createInvoice,
+    createInvoiceItem,
+    createPayment,
     deleteInvoice,
+    deleteInvoiceItem,
     getInvoiceById,
+    getInvoiceItems,
+    getInvoicePayments,
     searchInvoices,
     updateInvoice
 } from "../repositories/invoiceRepository.js";
@@ -88,11 +93,60 @@ export const createInvoiceService = async (payload) => {
 }
 
 export const getInvoiceByIdService = async (id) => {
-    const invoice = await getInvoiceById(id) 
+    const invoice = await getInvoiceById(id)
     if (!invoice) {
         throw new Error('Invoice not found')
-    } 
-    return invoice
+    }
+
+    const [items, payments] = await Promise.all([
+        getInvoiceItems(id),
+        getInvoicePayments(id)
+    ])
+
+    return {
+        ...invoice.toJSON(),
+        items,
+        payments
+    }
+}
+
+export const addInvoiceItemService = async (invoiceId, payload) => {
+    const invoice = await getInvoiceById(invoiceId)
+    if (!invoice) throw new Error('Invoice not found')
+
+    const description = String(payload.description || '').trim()
+    if (!description) throw new Error('Item description is required')
+
+    const quantity = Number(payload.quantity || 1)
+    const unitPrice = Number(payload.unit_price || 0)
+
+    return createInvoiceItem({
+        invoice_id: Number(invoiceId),
+        description,
+        quantity: quantity > 0 ? quantity : 1,
+        unit_price: unitPrice
+    })
+}
+
+export const deleteInvoiceItemService = async (invoiceId, itemId) => {
+    const deleted = await deleteInvoiceItem(itemId, invoiceId)
+    if (!deleted) throw new Error('Invoice item not found')
+    return { deleted: true }
+}
+
+export const addInvoicePaymentService = async (invoiceId, payload) => {
+    const invoice = await getInvoiceById(invoiceId)
+    if (!invoice) throw new Error('Invoice not found')
+
+    const amount = Number(payload.amount)
+    if (!amount || amount <= 0) throw new Error('Payment amount must be greater than 0')
+
+    return createPayment({
+        invoice_id: Number(invoiceId),
+        amount,
+        paid_at: payload.paid_at ? new Date(payload.paid_at) : new Date(),
+        method: payload.method ? String(payload.method).trim() : null
+    })
 }
 
 export const updateInvoiceService = async (id, payload) => {

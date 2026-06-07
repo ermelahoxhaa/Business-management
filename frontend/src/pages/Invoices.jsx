@@ -5,9 +5,13 @@ import {
   getClients,
   getProjects,
   getInvoices,
+  getInvoice,
   createInvoice,
   updateInvoice,
   deleteInvoice,
+  addInvoiceItem,
+  deleteInvoiceItem,
+  addInvoicePayment,
   exportEntityData
 } from '../services/api'
 import { getUserRole } from '../services/auth'
@@ -44,6 +48,9 @@ export default function Invoices() {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState(null)
+  const [invoiceExtras, setInvoiceExtras] = useState({ items: [], payments: [] })
+  const [itemForm, setItemForm] = useState({ description: '', quantity: '1', unit_price: '' })
+  const [paymentForm, setPaymentForm] = useState({ amount: '', method: '', paid_at: '' })
 
   const [form, setForm] = useState({
     client_id: '',
@@ -150,7 +157,21 @@ export default function Invoices() {
     setEditForm({ ...editForm, [e.target.name]: e.target.value })
   }
 
-  const handleEditInvoice = (invoice) => {
+  const loadInvoiceExtras = async (invoiceId) => {
+    try {
+      const response = await getInvoice(invoiceId)
+      const data = response.data || {}
+      setInvoiceExtras({
+        items: data.items || [],
+        payments: data.payments || []
+      })
+    } catch (err) {
+      console.error('Error loading invoice details:', err)
+      setInvoiceExtras({ items: [], payments: [] })
+    }
+  }
+
+  const handleEditInvoice = async (invoice) => {
     setEditingId(invoice.id)
     setEditForm({
       client_id: invoice.client_id || '',
@@ -162,10 +183,70 @@ export default function Invoices() {
       issued_at: formatDateForInput(invoice.issued_at),
       project_id: invoice.project_id || ''
     })
+    setItemForm({ description: '', quantity: '1', unit_price: '' })
+    setPaymentForm({ amount: '', method: '', paid_at: '' })
+    await loadInvoiceExtras(invoice.id)
+  }
+
+  const handleAddInvoiceItem = async (invoiceId) => {
+    if (!itemForm.description.trim()) {
+      alert('Item description is required')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await addInvoiceItem(invoiceId, {
+        description: itemForm.description.trim(),
+        quantity: Number(itemForm.quantity) || 1,
+        unit_price: Number(itemForm.unit_price) || 0
+      })
+      setItemForm({ description: '', quantity: '1', unit_price: '' })
+      await loadInvoiceExtras(invoiceId)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Unable to add invoice item')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteInvoiceItem = async (invoiceId, itemId) => {
+    setSaving(true)
+    try {
+      await deleteInvoiceItem(invoiceId, itemId)
+      await loadInvoiceExtras(invoiceId)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Unable to delete invoice item')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleAddInvoicePayment = async (invoiceId) => {
+    if (!paymentForm.amount || Number(paymentForm.amount) <= 0) {
+      alert('Payment amount must be greater than 0')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await addInvoicePayment(invoiceId, {
+        amount: Number(paymentForm.amount),
+        method: paymentForm.method.trim() || null,
+        paid_at: paymentForm.paid_at || null
+      })
+      setPaymentForm({ amount: '', method: '', paid_at: '' })
+      await loadInvoiceExtras(invoiceId)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Unable to add payment')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleCancelEdit = () => {
     setEditingId(null)
+    setInvoiceExtras({ items: [], payments: [] })
     setEditForm({
       client_id: '',
       invoice_number: '',
@@ -586,6 +667,121 @@ export default function Invoices() {
                             </select>
                           </div>
                         </div>
+
+                        {canManage && (
+                          <div className="space-y-4 border-t border-slate-800 pt-4">
+                            <div>
+                              <h4 className="text-sm font-semibold text-white">Line items</h4>
+                              {invoiceExtras.items.length === 0 ? (
+                                <p className="mt-2 text-xs text-slate-500">No line items yet.</p>
+                              ) : (
+                                <ul className="mt-2 space-y-2">
+                                  {invoiceExtras.items.map((item) => (
+                                    <li
+                                      key={item.id}
+                                      className="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-950/50 px-3 py-2 text-sm"
+                                    >
+                                      <span className="text-slate-200">
+                                        {item.description} · {item.quantity} × €{Number(item.unit_price).toFixed(2)}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteInvoiceItem(invoice.id, item.id)}
+                                        disabled={saving}
+                                        className="text-xs text-rose-300 hover:text-rose-200 disabled:opacity-50"
+                                      >
+                                        Remove
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                <input
+                                  value={itemForm.description}
+                                  onChange={(e) => setItemForm((current) => ({ ...current, description: e.target.value }))}
+                                  placeholder="Description"
+                                  className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                                />
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={itemForm.quantity}
+                                  onChange={(e) => setItemForm((current) => ({ ...current, quantity: e.target.value }))}
+                                  placeholder="Qty"
+                                  className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                                />
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={itemForm.unit_price}
+                                  onChange={(e) => setItemForm((current) => ({ ...current, unit_price: e.target.value }))}
+                                  placeholder="Unit price"
+                                  className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleAddInvoiceItem(invoice.id)}
+                                disabled={saving}
+                                className="mt-2 rounded-2xl bg-sky-500/20 px-4 py-2 text-xs font-semibold text-sky-200 transition hover:bg-sky-500/30 disabled:opacity-50"
+                              >
+                                Add line item
+                              </button>
+                            </div>
+
+                            <div>
+                              <h4 className="text-sm font-semibold text-white">Payments</h4>
+                              {invoiceExtras.payments.length === 0 ? (
+                                <p className="mt-2 text-xs text-slate-500">No payments recorded yet.</p>
+                              ) : (
+                                <ul className="mt-2 space-y-2">
+                                  {invoiceExtras.payments.map((payment) => (
+                                    <li
+                                      key={payment.id}
+                                      className="rounded-2xl border border-slate-800 bg-slate-950/50 px-3 py-2 text-sm text-slate-200"
+                                    >
+                                      €{Number(payment.amount).toFixed(2)}
+                                      {payment.method ? ` · ${payment.method}` : ''}
+                                      {payment.paid_at ? ` · ${formatDateForInput(payment.paid_at)}` : ''}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={paymentForm.amount}
+                                  onChange={(e) => setPaymentForm((current) => ({ ...current, amount: e.target.value }))}
+                                  placeholder="Amount"
+                                  className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                                />
+                                <input
+                                  value={paymentForm.method}
+                                  onChange={(e) => setPaymentForm((current) => ({ ...current, method: e.target.value }))}
+                                  placeholder="Method"
+                                  className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                                />
+                                <input
+                                  type="date"
+                                  value={paymentForm.paid_at}
+                                  onChange={(e) => setPaymentForm((current) => ({ ...current, paid_at: e.target.value }))}
+                                  className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleAddInvoicePayment(invoice.id)}
+                                disabled={saving}
+                                className="mt-2 rounded-2xl bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/30 disabled:opacity-50"
+                              >
+                                Record payment
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex gap-2 pt-2">
                           <button
                             onClick={() => handleUpdateInvoice(invoice.id)}

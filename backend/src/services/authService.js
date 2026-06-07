@@ -3,6 +3,7 @@ import { createUser, findUserByEmail, getAllUsers } from '../repositories/userRe
 import Role from '../models/Role.js'
 import UserRole from '../models/UserRole.js'
 import { issueAuthTokens } from './refreshTokenService.js'
+import { logWorkspaceEvent, upsertUserPresence } from './eventLogService.js'
 
 const isStrongPassword = (password) =>
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(password)
@@ -52,6 +53,16 @@ export const loginUser = async ({ email, password }) => {
   })
 
   const role = userRole?.Role?.name || 'employee'
+
+  await logWorkspaceEvent({
+    userId: user.id,
+    action: 'login',
+    entityType: 'user',
+    entityId: user.id,
+    message: `${user.email} logged in`
+  })
+  await upsertUserPresence({ userId: user.id, status: 'online' })
+
   return issueAuthTokens(user, role)
 }
 

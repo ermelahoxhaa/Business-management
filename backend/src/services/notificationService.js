@@ -5,6 +5,7 @@ import UserRole from '../models/UserRole.js'
 import Role from '../models/Role.js'
 import { emitToUser } from '../config/socket.js'
 import { logActivity } from './activityService.js'
+import { logNotificationEvent } from './eventLogService.js'
 
 export const createNotification = async ({ userId, title, message, entityType, entityId }) => {
   const notification = await Notification.create({
@@ -26,6 +27,15 @@ export const createNotification = async ({ userId, title, message, entityType, e
   }
 
   emitToUser(userId, 'notification', payload)
+
+  await logNotificationEvent({
+    notificationId: notification.id,
+    userId,
+    eventType: 'delivered',
+    channel: 'socket',
+    title: notification.title,
+    message: notification.message
+  })
 
   await logActivity({
     userId,

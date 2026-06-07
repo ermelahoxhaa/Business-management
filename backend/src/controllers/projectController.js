@@ -6,6 +6,11 @@ import {
   updateProjectService,
   deleteProjectService
 } from '../services/projectServices.js'
+import {
+  addProjectMemberService,
+  listProjectMembersService,
+  removeProjectMemberService
+} from '../services/projectMemberService.js'
 import { getTasksByAssignedUserService } from '../services/taskServices.js'
 
 export const createProjectController = async (req, res) => {
@@ -57,6 +62,33 @@ export const updateProjectController = async (req, res) => {
       ...req.body,
       updated_by: req.user.id
     })
+    res.json(result)
+  } catch (err) {
+    res.status(400).json({ message: err.message })
+  }
+}
+
+export const getProjectMembersController = async (req, res) => {
+  try {
+    const members = await listProjectMembersService(req.params.id)
+    res.json(members)
+  } catch (err) {
+    res.status(400).json({ message: err.message })
+  }
+}
+
+export const addProjectMemberController = async (req, res) => {
+  try {
+    const member = await addProjectMemberService(req.params.id, req.body)
+    res.status(201).json(member)
+  } catch (err) {
+    res.status(400).json({ message: err.message })
+  }
+}
+
+export const removeProjectMemberController = async (req, res) => {
+  try {
+    const result = await removeProjectMemberService(req.params.id, req.params.memberId)
     res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })

@@ -149,3 +149,21 @@ export const sendNotification = (payload) => API.post('/notifications/send', pay
 export const getActivity = () => API.get('/activity')
 
 export const getActivityStats = () => API.get('/activity/stats')
+
+export const addInvoiceItem = (invoiceId, data) => API.post(`/invoices/${invoiceId}/items`, data)
+export const deleteInvoiceItem = (invoiceId, itemId) => API.delete(`/invoices/${invoiceId}/items/${itemId}`)
+export const addInvoicePayment = (invoiceId, data) => API.post(`/invoices/${invoiceId}/payments`, data)
+
+export const getClientContacts = (clientId) => API.get(`/clients/${clientId}/contacts`)
+export const addClientContact = (clientId, data) => API.post(`/clients/${clientId}/contacts`, data)
+export const deleteClientContact = (clientId, contactId) => API.delete(`/clients/${clientId}/contacts/${contactId}`)
+export const getClientProjects = (clientId) => API.get(`/clients/${clientId}/projects`)
+export const linkClientProject = (clientId, data) => API.post(`/clients/${clientId}/projects`, data)
+export const unlinkClientProject = (clientId, linkId) => API.delete(`/clients/${clientId}/projects/${linkId}`)
+
+export const getProjectMembers = (projectId) => API.get(`/projects/${projectId}/members`)
+export const addProjectMember = (projectId, data) => API.post(`/projects/${projectId}/members`, data)
+export const removeProjectMember = (projectId, memberId) => API.delete(`/projects/${projectId}/members/${memberId}`)
+
+export const getCompanySettings = () => API.get('/settings/company')
+export const updateCompanySettings = (data) => API.put('/settings/company', data)

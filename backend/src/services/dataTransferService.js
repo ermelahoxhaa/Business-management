@@ -13,6 +13,7 @@ import { fetchAllPages } from '../utils/queryParser.js'
 import ImportBatch from '../models/ImportBatch.js'
 import { roleHasPermission } from './permissionService.js'
 import { logAudit } from './auditService.js'
+import { logWorkspaceEvent } from './eventLogService.js'
 
 const allowedEntities = ['tasks', 'projects', 'employees', 'departments', 'clients', 'invoices']
 const allowedFormats = ['csv', 'json', 'xlsx']
@@ -362,6 +363,15 @@ export const importEntityService = async (entity, file, requester) => {
       success: result.success,
       failed: result.failed
     }
+  })
+
+  await logWorkspaceEvent({
+    userId: requester.id,
+    action: 'import',
+    entityType: entity,
+    entityId: batch.id,
+    message: `Imported ${successCount} ${entity} record(s)`,
+    metadata: { status, failed: errors.length }
   })
 
   return { ...result, batchId: batch.id }

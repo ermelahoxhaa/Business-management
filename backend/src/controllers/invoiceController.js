@@ -1,5 +1,8 @@
 import {
+    addInvoiceItemService,
+    addInvoicePaymentService,
     createInvoiceService,
+    deleteInvoiceItemService,
     getInvoiceByIdService,
     updateInvoiceService,
     deleteInvoiceService,
@@ -59,6 +62,33 @@ export const updateInvoiceController = async (req, res) => {
             ipAddress: req.ip
         })
         res.json(invoice)
+    } catch (error) {
+        res.status(400).json({ message: error.message })
+    }
+}
+
+export const addInvoiceItemController = async (req, res) => {
+    try {
+        const item = await addInvoiceItemService(req.params.id, req.body)
+        res.status(201).json(item)
+    } catch (error) {
+        res.status(400).json({ message: error.message })
+    }
+}
+
+export const deleteInvoiceItemController = async (req, res) => {
+    try {
+        const result = await deleteInvoiceItemService(req.params.id, req.params.itemId)
+        res.json(result)
+    } catch (error) {
+        res.status(400).json({ message: error.message })
+    }
+}
+
+export const addInvoicePaymentController = async (req, res) => {
+    try {
+        const payment = await addInvoicePaymentService(req.params.id, req.body)
+        res.status(201).json(payment)
     } catch (error) {
         res.status(400).json({ message: error.message })
     }

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
+import { getCompanySettings, updateCompanySettings } from '../services/api'
 import { getCurrentUser, getUserRole } from '../services/auth'
 
 const roleLabels = {
@@ -46,6 +47,25 @@ export default function Settings() {
     projectUpdates: role !== 'employee'
   })
   const [message, setMessage] = useState('')
+  const [companyForm, setCompanyForm] = useState({ company_name: '' })
+  const [companySaving, setCompanySaving] = useState(false)
+
+  useEffect(() => {
+    if (role !== 'admin') return
+
+    const loadCompanySettings = async () => {
+      try {
+        const response = await getCompanySettings()
+        setCompanyForm({
+          company_name: response.data?.company_name || ''
+        })
+      } catch (err) {
+        console.error('Error loading company settings:', err)
+      }
+    }
+
+    loadCompanySettings()
+  }, [role])
 
   const handleProfileChange = (e) => {
     setProfileForm((current) => ({
@@ -92,6 +112,21 @@ export default function Settings() {
   const handlePreferencesSubmit = (e) => {
     e.preventDefault()
     setMessage('Notification preferences saved for this session.')
+  }
+
+  const handleCompanySubmit = async (e) => {
+    e.preventDefault()
+    setCompanySaving(true)
+    try {
+      await updateCompanySettings({
+        company_name: companyForm.company_name.trim()
+      })
+      setMessage('Company settings saved.')
+    } catch (err) {
+      setMessage(err.response?.data?.message || 'Unable to save company settings.')
+    } finally {
+      setCompanySaving(false)
+    }
   }
 
   return (
@@ -242,6 +277,31 @@ export default function Settings() {
                 Change Password
               </button>
             </form>
+
+            {role === 'admin' && (
+              <form onSubmit={handleCompanySubmit} className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+                <h2 className="text-2xl font-semibold text-white">Company Settings</h2>
+                <p className="mt-2 text-sm text-slate-400">
+                  Update the company name shown across the workspace.
+                </p>
+                <div className="mt-6">
+                  <label className="mb-2 block text-sm font-medium text-slate-300">Company name</label>
+                  <input
+                    name="company_name"
+                    value={companyForm.company_name}
+                    onChange={(e) => setCompanyForm({ company_name: e.target.value })}
+                    className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={companySaving}
+                  className="mt-6 rounded-3xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-50"
+                >
+                  {companySaving ? 'Saving...' : 'Save Company Settings'}
+                </button>
+              </form>
+            )}
 
             <form onSubmit={handlePreferencesSubmit} className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
               <h2 className="text-2xl font-semibold text-white">Notification Preferences</h2>

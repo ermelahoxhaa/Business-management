@@ -36,6 +36,7 @@ import clientRoutes from './routes/clientRoutes.js'
 import invoiceRoutes from './routes/invoiceRoutes.js'
 import notificationRoutes from './routes/notificationRoutes.js'
 import activityRoutes from './routes/activityRoutes.js'
+import settingsRoutes from './routes/settingsRoutes.js'
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
@@ -51,5 +52,6 @@ app.use('/api/clients', clientRoutes)
 app.use('/api/invoices', invoiceRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/activity', activityRoutes)
+app.use('/api/settings', settingsRoutes)
 
 export default app

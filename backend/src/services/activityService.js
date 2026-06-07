@@ -1,10 +1,8 @@
-import mongoose from 'mongoose'
 import Activity from '../mongo/Activity.js'
-
-const mongoReady = () => mongoose.connection.readyState === 1
+import { isDbReady } from '../mongo/ready.js'
 
 export const logActivity = async ({ userId, action, entityType, entityId, message }) => {
-  if (!mongoReady()) return null
+  if (!isDbReady()) return null
 
   try {
     return await Activity.create({
@@ -20,7 +18,7 @@ export const logActivity = async ({ userId, action, entityType, entityId, messag
 }
 
 export const getRecentActivity = async (userId, limit = 30) => {
-  if (!mongoReady()) return []
+  if (!isDbReady()) return []
 
   return Activity.find({ user_id: userId })
     .sort({ createdAt: -1 })
@@ -41,7 +39,7 @@ const daysAgo = (days) => {
 }
 
 export const getActivityStats = async ({ userId, role }) => {
-  if (!mongoReady()) {
+  if (!isDbReady()) {
     return {
       recentCount: 0,
       todayCount: 0,

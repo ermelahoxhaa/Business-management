@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, FileText, TrendingUp, Plus } from 'lucide-react'
-import { deleteClient, getClients, updateClient } from '../../services/api'
+import {
+  deleteClient,
+  getClients,
+  updateClient,
+  getProjects,
+  getClientContacts,
+  addClientContact,
+  deleteClientContact,
+  getClientProjects,
+  linkClientProject,
+  unlinkClientProject
+} from '../../services/api'
 import ListSearchPanel from '../../components/ListSearchPanel'
 import DataTransferBar from '../../components/DataTransferBar'
 import { buildQueryParams, unwrapList } from '../../utils/listResponse'
@@ -35,6 +46,11 @@ export default function ClientManagement() {
     status: 'active'
   })
   const [saving, setSaving] = useState(false)
+  const [allProjects, setAllProjects] = useState([])
+  const [clientContacts, setClientContacts] = useState([])
+  const [clientProjectLinks, setClientProjectLinks] = useState([])
+  const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', position: '' })
+  const [linkForm, setLinkForm] = useState({ project_id: '', notes: '' })
 
   const loadClients = useCallback(async (query = searchQuery, page = listPage) => {
     setLoading(true)
@@ -53,7 +69,16 @@ export default function ClientManagement() {
   }, [listPage, searchQuery])
 
   useEffect(() => {
-    loadClients(emptySearch, 1)
+    const loadInitialData = async () => {
+      await loadClients(emptySearch, 1)
+      try {
+        const response = await getProjects({ limit: 500 })
+        setAllProjects(unwrapList(response).items)
+      } catch (err) {
+        console.error('Error loading projects:', err)
+      }
+    }
+    loadInitialData()
   }, [])
 
   const handleSearchSubmit = (event) => {
@@ -78,7 +103,22 @@ export default function ClientManagement() {
     setSearchQuery((current) => ({ ...current, [name]: value }))
   }
 
-  const handleEditClient = (client) => {
+  const loadClientExtras = async (clientId) => {
+    try {
+      const [contactsRes, projectsRes] = await Promise.all([
+        getClientContacts(clientId),
+        getClientProjects(clientId)
+      ])
+      setClientContacts(contactsRes.data || [])
+      setClientProjectLinks(projectsRes.data || [])
+    } catch (err) {
+      console.error('Error loading client extras:', err)
+      setClientContacts([])
+      setClientProjectLinks([])
+    }
+  }
+
+  const handleEditClient = async (client) => {
     setEditingId(client.id)
     setEditForm({
       contact_name: client.contact_name || '',
@@ -88,10 +128,78 @@ export default function ClientManagement() {
       address: client.address || '',
       status: client.status || 'active'
     })
+    setContactForm({ name: '', email: '', phone: '', position: '' })
+    setLinkForm({ project_id: '', notes: '' })
+    await loadClientExtras(client.id)
+  }
+
+  const handleAddClientContact = async (clientId) => {
+    if (!contactForm.name.trim()) {
+      alert('Contact name is required')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await addClientContact(clientId, contactForm)
+      setContactForm({ name: '', email: '', phone: '', position: '' })
+      await loadClientExtras(clientId)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Unable to add contact')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteClientContact = async (clientId, contactId) => {
+    setSaving(true)
+    try {
+      await deleteClientContact(clientId, contactId)
+      await loadClientExtras(clientId)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Unable to delete contact')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleLinkClientProject = async (clientId) => {
+    if (!linkForm.project_id) {
+      alert('Select a project to link')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await linkClientProject(clientId, {
+        project_id: Number(linkForm.project_id),
+        notes: linkForm.notes.trim() || null
+      })
+      setLinkForm({ project_id: '', notes: '' })
+      await loadClientExtras(clientId)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Unable to link project')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleUnlinkClientProject = async (clientId, linkId) => {
+    setSaving(true)
+    try {
+      await unlinkClientProject(clientId, linkId)
+      await loadClientExtras(clientId)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Unable to unlink project')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleCancelEdit = () => {
     setEditingId(null)
+    setClientContacts([])
+    setClientProjectLinks([])
     setEditForm({
       contact_name: '',
       company_name: '',
@@ -350,6 +458,127 @@ export default function ClientManagement() {
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
                           </select>
+
+                          <div className="rounded-3xl border border-slate-800 bg-slate-950/40 p-4">
+                            <h4 className="text-sm font-semibold text-white">Additional contacts</h4>
+                            {clientContacts.length === 0 ? (
+                              <p className="mt-2 text-xs text-slate-500">No extra contacts yet.</p>
+                            ) : (
+                              <ul className="mt-2 space-y-2">
+                                {clientContacts.map((contact) => (
+                                  <li
+                                    key={contact.id}
+                                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 px-3 py-2 text-sm text-slate-200"
+                                  >
+                                    <span>
+                                      {contact.name}
+                                      {contact.position ? ` · ${contact.position}` : ''}
+                                      {contact.email ? ` · ${contact.email}` : ''}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteClientContact(client.id, contact.id)}
+                                      disabled={saving}
+                                      className="text-xs text-rose-300 hover:text-rose-200 disabled:opacity-50"
+                                    >
+                                      Remove
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                              <input
+                                value={contactForm.name}
+                                onChange={(e) => setContactForm((current) => ({ ...current, name: e.target.value }))}
+                                placeholder="Name"
+                                className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                              />
+                              <input
+                                value={contactForm.position}
+                                onChange={(e) => setContactForm((current) => ({ ...current, position: e.target.value }))}
+                                placeholder="Position"
+                                className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                              />
+                              <input
+                                value={contactForm.email}
+                                onChange={(e) => setContactForm((current) => ({ ...current, email: e.target.value }))}
+                                placeholder="Email"
+                                className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                              />
+                              <input
+                                value={contactForm.phone}
+                                onChange={(e) => setContactForm((current) => ({ ...current, phone: e.target.value }))}
+                                placeholder="Phone"
+                                className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleAddClientContact(client.id)}
+                              disabled={saving}
+                              className="mt-2 rounded-2xl bg-sky-500/20 px-4 py-2 text-xs font-semibold text-sky-200 transition hover:bg-sky-500/30 disabled:opacity-50"
+                            >
+                              Add contact
+                            </button>
+                          </div>
+
+                          <div className="rounded-3xl border border-slate-800 bg-slate-950/40 p-4">
+                            <h4 className="text-sm font-semibold text-white">Linked projects</h4>
+                            {clientProjectLinks.length === 0 ? (
+                              <p className="mt-2 text-xs text-slate-500">No linked projects yet.</p>
+                            ) : (
+                              <ul className="mt-2 space-y-2">
+                                {clientProjectLinks.map((link) => (
+                                  <li
+                                    key={link.id}
+                                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 px-3 py-2 text-sm text-slate-200"
+                                  >
+                                    <span>
+                                      {link.project?.name || `Project #${link.project_id}`}
+                                      {link.notes ? ` · ${link.notes}` : ''}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUnlinkClientProject(client.id, link.id)}
+                                      disabled={saving}
+                                      className="text-xs text-rose-300 hover:text-rose-200 disabled:opacity-50"
+                                    >
+                                      Unlink
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+                              <select
+                                value={linkForm.project_id}
+                                onChange={(e) => setLinkForm((current) => ({ ...current, project_id: e.target.value }))}
+                                className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                              >
+                                <option value="">Select project</option>
+                                {allProjects.map((project) => (
+                                  <option key={project.id} value={project.id}>
+                                    {project.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <input
+                                value={linkForm.notes}
+                                onChange={(e) => setLinkForm((current) => ({ ...current, notes: e.target.value }))}
+                                placeholder="Notes"
+                                className="rounded-2xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-sky-500"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleLinkClientProject(client.id)}
+                              disabled={saving}
+                              className="mt-2 rounded-2xl bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/30 disabled:opacity-50"
+                            >
+                              Link project
+                            </button>
+                          </div>
                         </div>
                         <button
                           type="button"
