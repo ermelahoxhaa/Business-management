@@ -551,7 +551,7 @@ export default function EmployeeHome() {
                                       type="text"
                                       value={commentDrafts[task.id] || ''}
                                       onChange={(event) => handleCommentChange(task.id, event.target.value)}
-                                      placeholder="Write a comment for your manager or team..."
+                                      placeholder="Write a comment for your team leader or team..."
                                       className="flex-1 rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-500"
                                     />
                                     <button

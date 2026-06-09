@@ -42,7 +42,7 @@ const faqs = [
   {
     id: 3,
     question: 'How do tasks and projects work?',
-    answer: 'Managers create projects and tasks, assign them to employees, and track progress through statuses such as To Do, In Progress, and Done.'
+    answer: 'Team leaders create projects and tasks, assign them to employees, and track progress through statuses such as To Do, In Progress, and Done.'
   },
   {
     id: 4,
@@ -83,7 +83,7 @@ export default function Home() {
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
             A centralized workspace for projects, tasks, employees, clients, invoices, and reports.
-            Built for managers and teams that need clear visibility and secure access.
+            Built for team leaders and teams that need clear visibility and secure access.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link

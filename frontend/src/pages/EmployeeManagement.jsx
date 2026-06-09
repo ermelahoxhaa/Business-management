@@ -322,7 +322,7 @@ export default function EmployeeManagement() {
             >
               <option value="">All roles</option>
               <option value="employee">Employee</option>
-              <option value="team_leader">Manager</option>
+              <option value="team_leader">Team Leader</option>
             </select>
             <select
               name="department_id"

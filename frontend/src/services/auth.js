@@ -17,7 +17,7 @@ export const getUserRole = () => Cookies.get(ROLE_KEY)
 export const getRoleLabel = (role) => {
   const labels = {
     admin: 'Admin',
-    team_leader: 'Manager',
+    team_leader: 'Team Leader',
     employee: 'Employee'
   }
   return labels[role] || 'Employee'
