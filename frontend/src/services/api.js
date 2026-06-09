@@ -165,5 +165,10 @@ export const getProjectMembers = (projectId) => API.get(`/projects/${projectId}/
 export const addProjectMember = (projectId, data) => API.post(`/projects/${projectId}/members`, data)
 export const removeProjectMember = (projectId, memberId) => API.delete(`/projects/${projectId}/members/${memberId}`)
 
+export const getAccountSettings = () => API.get('/settings/account')
+export const updateProfile = (data) => API.put('/settings/profile', data)
+export const changePassword = (data) => API.put('/settings/password', data)
+export const getNotificationPreferences = () => API.get('/settings/preferences')
+export const updateNotificationPreferences = (data) => API.put('/settings/preferences', data)
 export const getCompanySettings = () => API.get('/settings/company')
 export const updateCompanySettings = (data) => API.put('/settings/company', data)

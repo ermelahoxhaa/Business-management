@@ -35,6 +35,13 @@ export const setAuthData = (accessToken, user, role, refreshToken) => {
   Cookies.set(ROLE_KEY, role, { expires: 7 })
 }
 
+export const updateStoredUser = (user) => {
+  Cookies.set(USER_KEY, JSON.stringify(user), { expires: 7 })
+}
+
+export const getSettingsHomeRoute = (role) =>
+  role === 'employee' ? '/home' : '/dashboard'
+
 export const getToken = () => Cookies.get(TOKEN_KEY)
 
 export const getRefreshToken = () => Cookies.get(REFRESH_KEY)

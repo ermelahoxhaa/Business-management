@@ -1,8 +1,21 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { getCompanySettings, updateCompanySettings } from '../services/api'
-import { getCurrentUser, getUserRole } from '../services/auth'
+import {
+  changePassword,
+  getAccountSettings,
+  getCompanySettings,
+  updateCompanySettings,
+  updateNotificationPreferences,
+  updateProfile
+} from '../services/api'
+import {
+  clearAuthData,
+  getCurrentUser,
+  getSettingsHomeRoute,
+  getUserRole,
+  updateStoredUser
+} from '../services/auth'
 
 const roleLabels = {
   admin: 'Admin',
@@ -10,31 +23,29 @@ const roleLabels = {
   employee: 'Employee'
 }
 
-const roleSections = {
-  admin: [
-    'System preferences',
-    'Company settings',
-    'Role and permission settings',
-    'Security settings'
-  ],
-  team_leader: [
-    'Department and team preferences',
-    'Notification preferences',
-    'Security settings'
-  ],
-  employee: [
-    'Notification preferences',
-    'Security settings'
-  ]
-}
+const formatPermission = (code) =>
+  code
+    .split('.')
+    .map((part) => part.replace(/_/g, ' '))
+    .join(' · ')
 
 export default function Settings() {
-  const currentUser = getCurrentUser()
+  const navigate = useNavigate()
   const role = getUserRole()
+  const [accountUser, setAccountUser] = useState(getCurrentUser())
+  const [permissions, setPermissions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const [preferencesSaving, setPreferencesSaving] = useState(false)
+  const [companySaving, setCompanySaving] = useState(false)
+  const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState('success')
+
   const [profileForm, setProfileForm] = useState({
-    first_name: currentUser?.first_name || '',
-    last_name: currentUser?.last_name || '',
-    email: currentUser?.email || ''
+    first_name: '',
+    last_name: '',
+    email: ''
   })
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -42,30 +53,52 @@ export default function Settings() {
     confirmPassword: ''
   })
   const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    taskUpdates: true,
-    projectUpdates: role !== 'employee'
+    email_notifications: true,
+    task_updates: true,
+    project_updates: true
   })
-  const [message, setMessage] = useState('')
   const [companyForm, setCompanyForm] = useState({ company_name: '' })
-  const [companySaving, setCompanySaving] = useState(false)
+
+  const showMessage = (text, type = 'success') => {
+    setMessage(text)
+    setMessageType(type)
+  }
+
+  const loadSettings = useCallback(async () => {
+    setLoading(true)
+    try {
+      const response = await getAccountSettings()
+      const { user, permissions: userPermissions, preferences: savedPreferences } = response.data
+
+      setAccountUser(user)
+      setPermissions(userPermissions || [])
+      setProfileForm({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        email: user.email || ''
+      })
+      setPreferences({
+        email_notifications: savedPreferences?.email_notifications ?? true,
+        task_updates: savedPreferences?.task_updates ?? true,
+        project_updates: savedPreferences?.project_updates ?? role !== 'employee'
+      })
+
+      if (role === 'admin') {
+        const companyResponse = await getCompanySettings()
+        setCompanyForm({
+          company_name: companyResponse.data?.company_name || ''
+        })
+      }
+    } catch (err) {
+      showMessage(err.response?.data?.message || 'Unable to load settings.', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }, [role])
 
   useEffect(() => {
-    if (role !== 'admin') return
-
-    const loadCompanySettings = async () => {
-      try {
-        const response = await getCompanySettings()
-        setCompanyForm({
-          company_name: response.data?.company_name || ''
-        })
-      } catch (err) {
-        console.error('Error loading company settings:', err)
-      }
-    }
-
-    loadCompanySettings()
-  }, [role])
+    loadSettings()
+  }, [loadSettings])
 
   const handleProfileChange = (e) => {
     setProfileForm((current) => ({
@@ -88,45 +121,98 @@ export default function Settings() {
     }))
   }
 
-  const handleProfileSubmit = (e) => {
+  const handleProfileSubmit = async (e) => {
     e.preventDefault()
-    setMessage('Profile form is ready. Backend profile update endpoint is not available yet.')
+    setProfileSaving(true)
+
+    try {
+      const response = await updateProfile(profileForm)
+      const updatedUser = response.data.user
+      updateStoredUser(updatedUser)
+      setAccountUser(updatedUser)
+      showMessage(response.data.message || 'Profile updated successfully.')
+    } catch (err) {
+      showMessage(err.response?.data?.message || 'Unable to update profile.', 'error')
+    } finally {
+      setProfileSaving(false)
+    }
   }
 
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault()
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setMessage('New password and confirmation do not match.')
+      showMessage('New password and confirmation do not match.', 'error')
       return
     }
 
-    setPasswordForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    })
-    setMessage('Password form is ready. Backend password update endpoint is not available yet.')
+    setPasswordSaving(true)
+
+    try {
+      const response = await changePassword({
+        current_password: passwordForm.currentPassword,
+        new_password: passwordForm.newPassword
+      })
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      })
+      showMessage(response.data.message || 'Password updated successfully. Please sign in again.')
+      clearAuthData()
+      setTimeout(() => navigate('/login', { replace: true }), 1500)
+    } catch (err) {
+      showMessage(err.response?.data?.message || 'Unable to change password.', 'error')
+    } finally {
+      setPasswordSaving(false)
+    }
   }
 
-  const handlePreferencesSubmit = (e) => {
+  const handlePreferencesSubmit = async (e) => {
     e.preventDefault()
-    setMessage('Notification preferences saved for this session.')
+    setPreferencesSaving(true)
+
+    try {
+      const response = await updateNotificationPreferences(preferences)
+      setPreferences(response.data.preferences)
+      showMessage(response.data.message || 'Notification preferences saved.')
+    } catch (err) {
+      showMessage(err.response?.data?.message || 'Unable to save preferences.', 'error')
+    } finally {
+      setPreferencesSaving(false)
+    }
   }
 
   const handleCompanySubmit = async (e) => {
     e.preventDefault()
     setCompanySaving(true)
+
     try {
       await updateCompanySettings({
         company_name: companyForm.company_name.trim()
       })
-      setMessage('Company settings saved.')
+      showMessage('Company settings saved.')
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Unable to save company settings.')
+      showMessage(err.response?.data?.message || 'Unable to save company settings.', 'error')
     } finally {
       setCompanySaving(false)
     }
+  }
+
+  const preferenceOptions = [
+    ['email_notifications', 'Email notifications'],
+    ['task_updates', 'Task updates'],
+    ...(role !== 'employee' ? [['project_updates', 'Project updates']] : [])
+  ]
+
+  const backRoute = getSettingsHomeRoute(role)
+
+  if (loading) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-slate-950 px-4 text-sm text-slate-300">
+        Loading settings...
+      </div>
+    )
   }
 
   return (
@@ -136,8 +222,8 @@ export default function Settings() {
 
       <div className="relative z-10 mx-auto max-w-6xl space-y-8">
         <Link
-          to="/dashboard"
-          aria-label="Back to dashboard"
+          to={backRoute}
+          aria-label="Back to workspace"
           className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-slate-900/80 text-slate-200 shadow-lg shadow-slate-950/20 transition hover:border-sky-400/40 hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-sky-400/40"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -147,12 +233,18 @@ export default function Settings() {
           <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">Settings</p>
           <h1 className="mt-4 text-4xl font-semibold text-white">Account Settings</h1>
           <p className="mt-3 max-w-2xl text-sm text-slate-300">
-            Manage your profile, account details, and preferences from one shared settings page.
+            Update your profile, password, and notification preferences. Admin users can also manage company settings.
           </p>
         </section>
 
         {message && (
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200 shadow-xl">
+          <div
+            className={`rounded-3xl border p-4 text-sm shadow-xl ${
+              messageType === 'error'
+                ? 'border-rose-500/20 bg-rose-500/10 text-rose-100'
+                : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-100'
+            }`}
+          >
             {message}
           </div>
         )}
@@ -164,15 +256,15 @@ export default function Settings() {
               <div className="mt-5 space-y-3 text-sm">
                 <div className="flex justify-between gap-4 border-b border-slate-700 pb-3">
                   <span className="text-slate-400">First name</span>
-                  <span className="font-medium text-white">{currentUser?.first_name || '-'}</span>
+                  <span className="font-medium text-white">{accountUser?.first_name || '-'}</span>
                 </div>
                 <div className="flex justify-between gap-4 border-b border-slate-700 pb-3">
                   <span className="text-slate-400">Last name</span>
-                  <span className="font-medium text-white">{currentUser?.last_name || '-'}</span>
+                  <span className="font-medium text-white">{accountUser?.last_name || '-'}</span>
                 </div>
                 <div className="flex justify-between gap-4 border-b border-slate-700 pb-3">
                   <span className="text-slate-400">Email</span>
-                  <span className="font-medium text-white">{currentUser?.email || '-'}</span>
+                  <span className="font-medium text-white">{accountUser?.email || '-'}</span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-slate-400">Role</span>
@@ -181,16 +273,28 @@ export default function Settings() {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
-              <h2 className="text-2xl font-semibold text-white">Role Sections</h2>
-              <div className="mt-4 grid gap-3">
-                {(roleSections[role] || []).map((section) => (
-                  <div key={section} className="rounded-3xl border border-slate-700 bg-slate-950/70 p-4 text-sm text-slate-300">
-                    {section} placeholder
-                  </div>
-                ))}
+            {(role === 'admin' || role === 'team_leader') && (
+              <div className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+                <h2 className="text-2xl font-semibold text-white">Your Access</h2>
+                <p className="mt-2 text-sm text-slate-400">
+                  Permissions assigned to your {roleLabels[role]?.toLowerCase()} role.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {permissions.length ? (
+                    permissions.map((permission) => (
+                      <span
+                        key={permission}
+                        className="rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1 text-xs text-slate-200"
+                      >
+                        {formatPermission(permission)}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-slate-500">No permissions loaded.</span>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="space-y-6">
@@ -203,6 +307,7 @@ export default function Settings() {
                     name="first_name"
                     value={profileForm.first_name}
                     onChange={handleProfileChange}
+                    required
                     className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                   />
                 </div>
@@ -212,6 +317,7 @@ export default function Settings() {
                     name="last_name"
                     value={profileForm.last_name}
                     onChange={handleProfileChange}
+                    required
                     className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                   />
                 </div>
@@ -222,20 +328,25 @@ export default function Settings() {
                     name="email"
                     value={profileForm.email}
                     onChange={handleProfileChange}
+                    required
                     className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                   />
                 </div>
               </div>
               <button
                 type="submit"
-                className="mt-6 rounded-3xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
+                disabled={profileSaving}
+                className="mt-6 rounded-3xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-50"
               >
-                Save Profile
+                {profileSaving ? 'Saving...' : 'Save Profile'}
               </button>
             </form>
 
             <form onSubmit={handlePasswordSubmit} className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
               <h2 className="text-2xl font-semibold text-white">Security</h2>
+              <p className="mt-2 text-sm text-slate-400">
+                Use at least 8 characters with uppercase, lowercase, number, and special character.
+              </p>
               <div className="mt-6 grid gap-4">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-300">Current Password</label>
@@ -244,6 +355,8 @@ export default function Settings() {
                     name="currentPassword"
                     value={passwordForm.currentPassword}
                     onChange={handlePasswordChange}
+                    required
+                    autoComplete="current-password"
                     className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                   />
                 </div>
@@ -255,6 +368,8 @@ export default function Settings() {
                       name="newPassword"
                       value={passwordForm.newPassword}
                       onChange={handlePasswordChange}
+                      required
+                      autoComplete="new-password"
                       className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                     />
                   </div>
@@ -265,6 +380,8 @@ export default function Settings() {
                       name="confirmPassword"
                       value={passwordForm.confirmPassword}
                       onChange={handlePasswordChange}
+                      required
+                      autoComplete="new-password"
                       className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                     />
                   </div>
@@ -272,9 +389,10 @@ export default function Settings() {
               </div>
               <button
                 type="submit"
-                className="mt-6 rounded-3xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
+                disabled={passwordSaving}
+                className="mt-6 rounded-3xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-50"
               >
-                Change Password
+                {passwordSaving ? 'Updating...' : 'Change Password'}
               </button>
             </form>
 
@@ -282,7 +400,7 @@ export default function Settings() {
               <form onSubmit={handleCompanySubmit} className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
                 <h2 className="text-2xl font-semibold text-white">Company Settings</h2>
                 <p className="mt-2 text-sm text-slate-400">
-                  Update the company name shown across the workspace.
+                  Update the company name stored in the workspace.
                 </p>
                 <div className="mt-6">
                   <label className="mb-2 block text-sm font-medium text-slate-300">Company name</label>
@@ -305,13 +423,15 @@ export default function Settings() {
 
             <form onSubmit={handlePreferencesSubmit} className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
               <h2 className="text-2xl font-semibold text-white">Notification Preferences</h2>
+              <p className="mt-2 text-sm text-slate-400">
+                Saved to your account and used for notification delivery preferences.
+              </p>
               <div className="mt-6 grid gap-3">
-                {[
-                  ['emailNotifications', 'Email notifications'],
-                  ['taskUpdates', 'Task updates'],
-                  ['projectUpdates', 'Project updates']
-                ].map(([name, label]) => (
-                  <label key={name} className="flex items-center justify-between rounded-3xl border border-slate-700 bg-slate-950/70 p-4 text-sm text-slate-200 cursor-pointer transition hover:border-sky-500">
+                {preferenceOptions.map(([name, label]) => (
+                  <label
+                    key={name}
+                    className="flex cursor-pointer items-center justify-between rounded-3xl border border-slate-700 bg-slate-950/70 p-4 text-sm text-slate-200 transition hover:border-sky-500"
+                  >
                     <span>{label}</span>
                     <input
                       type="checkbox"
@@ -325,9 +445,10 @@ export default function Settings() {
               </div>
               <button
                 type="submit"
-                className="mt-6 rounded-3xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400"
+                disabled={preferencesSaving}
+                className="mt-6 rounded-3xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:opacity-50"
               >
-                Save Preferences
+                {preferencesSaving ? 'Saving...' : 'Save Preferences'}
               </button>
             </form>
           </div>
