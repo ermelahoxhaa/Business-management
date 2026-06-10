@@ -65,8 +65,6 @@ API.interceptors.response.use(
   }
 )
 
-export const signupUser = (data) => API.post('/auth/signup', data)
-
 export const loginUser = (data) => API.post('/auth/login', data)
 
 export const refreshSession = (refreshToken) => API.post('/auth/refresh', { refreshToken })

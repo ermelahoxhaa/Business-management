@@ -6,7 +6,6 @@ import Footer from './components/Footer'
 import Home from './pages/Home'
 import EmployeeHome from './pages/EmployeeHome'
 import Login from './pages/Login'
-import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import EmployeeManagement from './pages/EmployeeManagement'
 import ClientManagement from './pages/dashboard/ClientManagement'
@@ -55,7 +54,6 @@ function App() {
           </ProtectedRoute>
         } />
         <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
 
         <Route path="/client" element={
           <ProtectedRoute allowedRoles={['admin', 'team_leader']}>

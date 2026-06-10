@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { loginUser } from '../services/api'
 import { isAuthenticated, getUserRole, setAuthData, getDefaultRouteForRole } from '../services/auth'
 
@@ -75,13 +75,6 @@ export default function Login() {
           >
             Login
           </button>
-
-          <p className="mt-5 text-center text-sm text-slate-400">
-            Don&apos;t have an account?{' '}
-            <Link to="/signup" className="font-medium text-sky-300 hover:text-sky-200">
-              Sign up
-            </Link>
-          </p>
         </form>
       </div>
     </div>

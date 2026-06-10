@@ -1,15 +1,6 @@
-import { loginUser, registerUser, getAllUsersService } from '../services/authService.js'
+import { loginUser, getAllUsersService } from '../services/authService.js'
 import { refreshAuthTokens, logoutRefreshToken } from '../services/refreshTokenService.js'
 import { logAudit } from '../services/auditService.js'
-
-export const signup = async (req, res) => {
-  try {
-    const user = await registerUser(req.body)
-    res.status(201).json(user)
-  } catch (err) {
-    res.status(400).json({ message: err.message })
-  }
-}
 
 export const login = async (req, res) => {
   try {

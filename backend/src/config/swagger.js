@@ -68,9 +68,6 @@ const swaggerSpec = {
     '/auth/logout': {
       post: { tags: ['Auth'], summary: 'Logout (revoke refresh token)' }
     },
-    '/auth/signup': {
-      post: { tags: ['Auth'], summary: 'Register employee account', security: [] }
-    },
     '/auth/users': {
       get: { tags: ['Auth'], summary: 'List users (admin / team leader)' }
     },

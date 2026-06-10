@@ -65,7 +65,7 @@ export default function Header() {
   const location = useLocation()
   const isLoggedIn = isAuthenticated()
   const userRole = getUserRole()
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup'
+  const isAuthPage = location.pathname === '/login'
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)

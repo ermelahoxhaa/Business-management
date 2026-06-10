@@ -1,10 +1,9 @@
 import express from 'express'
-import { signup, login, refresh, logout, getUsers } from '../controllers/authController.js'
+import { login, refresh, logout, getUsers } from '../controllers/authController.js'
 import { requireAuth, requirePermissions } from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
-router.post('/signup', signup)
 router.post('/login', login)
 router.post('/refresh', refresh)
 router.post('/logout', logout)
