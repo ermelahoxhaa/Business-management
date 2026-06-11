@@ -16,7 +16,7 @@ const router = express.Router()
 
 router.get('/', requireAuth, getAllProjectsController)
 router.get('/my-projects', requireAuth, requireRoles(['employee']), getMyProjectsController)
-router.post('/', requireAuth, requireRoles(['team_leader']), createProjectController)
+router.post('/', requireAuth, requireRoles(['admin', 'team_leader']), createProjectController)
 router.get('/:id/members', requireAuth, requireRoles(['admin', 'team_leader']), getProjectMembersController)
 router.post('/:id/members', requireAuth, requireRoles(['admin', 'team_leader']), addProjectMemberController)
 router.delete('/:id/members/:memberId', requireAuth, requireRoles(['admin', 'team_leader']), removeProjectMemberController)

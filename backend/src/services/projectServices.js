@@ -30,11 +30,11 @@ export const searchProjectsService = async (query, requester) => {
     defaultSort: 'created_at'
   })
 
-  const createdBy = requester?.role === 'team_leader' ? requester.id : undefined
+  const accessibleToUserId = requester?.role === 'team_leader' ? requester.id : undefined
 
   const { rows, count } = await searchProjects({
     search: listQuery.search,
-    created_by: createdBy,
+    accessible_to_user_id: accessibleToUserId,
     sort: listQuery.sort,
     order: listQuery.order,
     limit: listQuery.limit,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import {
@@ -22,6 +22,7 @@ export default function Projects() {
   const currentUser = getCurrentUser()
   const isTeamLeader = userRole === 'team_leader'
   const isAdmin = userRole === 'admin'
+  const projectsListRef = useRef(null)
   const [projects, setProjects] = useState([])
   const [users, setUsers] = useState([])
   const [tasks, setTasks] = useState([])
@@ -393,6 +394,7 @@ export default function Projects() {
 
 
         <ListSearchPanel
+          scrollToRef={projectsListRef}
           search={searchQuery.search}
           onSearchChange={(value) => setSearchQuery((current) => ({ ...current, search: value }))}
           onSubmit={handleSearchSubmit}
@@ -414,13 +416,14 @@ export default function Projects() {
         <DataTransferBar
           entity="projects"
           filters={buildQueryParams(searchQuery)}
+          scrollToRef={projectsListRef}
           onImported={() => {
             loadProjects(searchQuery)
             loadTasks()
           }}
         />
 
-        <section className="grid gap-6">
+        <section ref={projectsListRef} className="grid gap-6">
           {projects.length === 0 ? (
             <div className="rounded-[2rem] border border-dashed border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400 shadow-xl">
               No projects available yet.

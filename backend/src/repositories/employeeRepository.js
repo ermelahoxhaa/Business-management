@@ -18,6 +18,47 @@ export const upsertUserRole = async (userId, roleId) => {
 
 export const createEmployee = (data) => Employee.create(data)
 
+export const ensureEmployeeProfile = async ({ user_id, created_by, position = null, department_id = null }) => {
+  const existing = await Employee.findOne({ where: { user_id } })
+  if (existing) return existing
+
+  return Employee.create({
+    user_id,
+    department_id,
+    position,
+    employment_status: 'active',
+    created_by
+  })
+}
+
+export const getUserIdsByDepartment = async (departmentId, roleNames = ['employee']) => {
+  const roleWhere = roleNames.length ? { name: { [Op.in]: roleNames } } : {}
+
+  const rows = await Employee.findAll({
+    where: {
+      department_id: departmentId,
+      employment_status: 'active'
+    },
+    include: [
+      {
+        model: User,
+        attributes: ['id'],
+        required: true,
+        include: [
+          {
+            model: Role,
+            attributes: ['name'],
+            where: roleWhere,
+            through: { attributes: [] }
+          }
+        ]
+      }
+    ]
+  })
+
+  return rows.map((row) => row.user_id)
+}
+
 export const getEmployeeById = (id) =>
   Employee.findByPk(id, {
     include: [
@@ -83,6 +124,12 @@ export const searchEmployees = async ({
     }
 
     where.department_id = requesterProfile.department_id
+
+    if (role && role !== 'employee') {
+      return { rows: [], count: 0 }
+    }
+
+    roleWhere.name = 'employee'
   } else if (departmentId) {
     where.department_id = departmentId
   }
@@ -119,3 +166,7 @@ export const searchEmployees = async ({
 export const updateUser = (id, data) => User.update(data, { where: { id } })
 
 export const updateEmployee = (id, data) => Employee.update(data, { where: { id } })
+
+export const deleteEmployeeRecord = (id) => Employee.destroy({ where: { id } })
+
+export const deleteUserById = (id) => User.destroy({ where: { id } })

@@ -236,7 +236,9 @@ export default function Dashboard() {
                 { label: 'Projects', icon: '📁', path: '/projects' },
                 { label: 'Tasks', icon: '✅', path: '/tasks' },
                 { label: 'Reports', icon: '📈', path: '/reports' },
-                ...(role === 'admin' ? [{ label: 'Employees', icon: '👥', path: '/employees' }] : []),
+                ...(role === 'admin' || role === 'team_leader'
+                  ? [{ label: role === 'admin' ? 'Employees' : 'My Team', icon: '👥', path: '/employees' }]
+                  : []),
                 { label: 'Settings', icon: '⚙️', path: '/settings' }
               ].map((item) => (
                 <Link

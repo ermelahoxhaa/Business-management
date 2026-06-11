@@ -8,6 +8,12 @@ import {
   deleteTask
 } from '../repositories/taskRepository.js'
 import { getProjectById } from '../repositories/projectRepository.js'
+import ProjectMember from '../models/ProjectMember.js'
+import {
+  assertUserInTeamLeaderDepartment,
+  getDepartmentEmployeeUserIds,
+  getTeamLeaderDepartmentId
+} from './departmentScopeService.js'
 import { parseListQuery, buildPaginatedResponse } from '../utils/queryParser.js'
 
 const validStatuses = ['todo', 'in_progress', 'done']
@@ -25,7 +31,15 @@ const assertProjectAccess = async (projectId, requester) => {
     throw new Error('Project not found')
   }
 
-  if (Number(project.created_by) !== Number(requester.id)) {
+  if (Number(project.created_by) === Number(requester.id)) {
+    return
+  }
+
+  const membership = await ProjectMember.findOne({
+    where: { project_id: projectId, user_id: requester.id }
+  })
+
+  if (!membership) {
     throw new Error('You do not have access to this project')
   }
 }
@@ -73,6 +87,11 @@ export const createTaskService = async (
     throw new Error('Assigned user ID must be a positive integer if provided')
   }
 
+  if (requester?.role === 'team_leader') {
+    await assertProjectAccess(project_id, requester)
+    await assertUserInTeamLeaderDepartment(requester.id, assigned_to)
+  }
+
   return createTask({
     title,
     description,
@@ -99,7 +118,15 @@ export const searchTasksService = async (query, requester) => {
     throw new Error('Invalid priority. Allowed values: low, medium, high')
   }
 
-  const managerUserId = requester?.role === 'team_leader' ? requester.id : null
+  let departmentUserIds
+  if (requester?.role === 'team_leader') {
+    const departmentId = await getTeamLeaderDepartmentId(requester.id)
+    if (!departmentId) {
+      return buildPaginatedResponse([], 0, listQuery)
+    }
+    departmentUserIds = await getDepartmentEmployeeUserIds(departmentId)
+    departmentUserIds.push(requester.id)
+  }
 
   const { rows, count } = await searchTasks({
     search: listQuery.search,
@@ -113,7 +140,7 @@ export const searchTasksService = async (query, requester) => {
     order: listQuery.order,
     limit: listQuery.limit,
     offset: listQuery.offset,
-    managerUserId
+    departmentUserIds
   })
 
   return buildPaginatedResponse(rows, count, listQuery)
@@ -189,6 +216,15 @@ export const updateTaskService = async (id, payload, requester) => {
 
   if (updates.project_id !== undefined && (updates.project_id <= 0 || !Number.isInteger(updates.project_id))) {
     throw new Error('Valid project ID is required')
+  }
+
+  if (requester?.role === 'team_leader') {
+    if (updates.project_id !== undefined) {
+      await assertProjectAccess(updates.project_id, requester)
+    }
+    if (updates.assigned_to !== undefined) {
+      await assertUserInTeamLeaderDepartment(requester.id, updates.assigned_to)
+    }
   }
 
   await updateTask(id, updates)

@@ -58,7 +58,7 @@ export const logout = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const users = await getAllUsersService()
+    const users = await getAllUsersService(req.user)
     res.json(users)
   } catch (err) {
     res.status(400).json({ message: err.message })

@@ -1,6 +1,5 @@
 import { Op } from 'sequelize'
 import Task from '../models/Task.js'
-import Project from '../models/Project.js'
 
 export const createTask = (data) => Task.create(data)
 export const getTaskById = (id) => Task.findByPk(id)
@@ -21,7 +20,7 @@ export const searchTasks = async ({
   order,
   limit,
   offset,
-  managerUserId
+  departmentUserIds
 }) => {
   const where = {}
 
@@ -35,7 +34,7 @@ export const searchTasks = async ({
 
   if (status) where.status = status
   if (priority) where.priority = priority
-  if (assigned_to) where.assigned_to = assigned_to
+  if (!departmentUserIds?.length && assigned_to) where.assigned_to = assigned_to
 
   if (due_from || due_to) {
     where.due_date = {}
@@ -47,24 +46,18 @@ export const searchTasks = async ({
     }
   }
 
-  if (managerUserId) {
-    const managerProjects = await Project.findAll({
-      where: { created_by: managerUserId },
-      attributes: ['id']
-    })
-    const projectIds = managerProjects.map((project) => project.id)
-
-    if (projectIds.length === 0) {
-      return { rows: [], count: 0 }
+  if (departmentUserIds?.length) {
+    if (assigned_to) {
+      if (!departmentUserIds.includes(Number(assigned_to))) {
+        return { rows: [], count: 0 }
+      }
+      where.assigned_to = assigned_to
+    } else {
+      where.assigned_to = { [Op.in]: departmentUserIds }
     }
 
     if (project_id) {
-      if (!projectIds.includes(Number(project_id))) {
-        return { rows: [], count: 0 }
-      }
       where.project_id = project_id
-    } else {
-      where.project_id = { [Op.in]: projectIds }
     }
   } else if (project_id) {
     where.project_id = project_id

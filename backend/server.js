@@ -31,6 +31,7 @@ import CompanySetting from './src/models/CompanySetting.js'
 import User from './src/models/User.js'
 import Role from './src/models/Role.js'
 import UserRole from './src/models/UserRole.js'
+import { ensureEmployeeProfile } from './src/repositories/employeeRepository.js'
 import { seedPermissions } from './src/services/permissionService.js'
 import bcrypt from 'bcrypt'
 
@@ -55,9 +56,10 @@ const seedRolesAndAdmin = async () => {
 
     const adminEmail = process.env.ADMIN_EMAIL
     const adminPassword = process.env.ADMIN_PASSWORD
+    let adminUser = null
 
     if (adminEmail && adminPassword) {
-      let adminUser = await User.findOne({ where: { email: adminEmail } })
+      adminUser = await User.findOne({ where: { email: adminEmail } })
       if (!adminUser) {
         const hashedPassword = await bcrypt.hash(adminPassword, 10)
         adminUser = await User.create({
@@ -116,6 +118,14 @@ const seedRolesAndAdmin = async () => {
       })
     }
 
+    const seedCreatedBy = adminUser?.id || teamLeaderUser.id
+
+    await ensureEmployeeProfile({
+      user_id: teamLeaderUser.id,
+      created_by: seedCreatedBy,
+      position: 'Team Leader'
+    })
+
     const employeeEmail = process.env.EMPLOYEE_EMAIL || 'employee@example.com'
     const employeePassword = process.env.EMPLOYEE_PASSWORD || 'employee123'
 
@@ -133,7 +143,23 @@ const seedRolesAndAdmin = async () => {
         user_id: employeeUser.id,
         role_id: employeeRole[0].id
       })
+    } else {
+      const existingEmployeeRole = await UserRole.findOne({
+        where: { user_id: employeeUser.id, role_id: employeeRole[0].id }
+      })
+      if (!existingEmployeeRole) {
+        await UserRole.create({
+          user_id: employeeUser.id,
+          role_id: employeeRole[0].id
+        })
+      }
     }
+
+    await ensureEmployeeProfile({
+      user_id: employeeUser.id,
+      created_by: seedCreatedBy,
+      position: 'Employee'
+    })
 
     await CompanySetting.findOrCreate({
       where: { key: 'company_name' },

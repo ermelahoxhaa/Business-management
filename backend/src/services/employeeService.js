@@ -1,7 +1,14 @@
 import bcrypt from 'bcrypt'
+import UserRole from '../models/UserRole.js'
+import Task from '../models/Task.js'
+import Project from '../models/Project.js'
+import ProjectMember from '../models/ProjectMember.js'
+import RefreshToken from '../models/RefreshToken.js'
 import {
   createEmployee,
   createUser,
+  deleteEmployeeRecord,
+  deleteUserById,
   findUserByEmail,
   getEmployeeById,
   getEmployeeByUserId,
@@ -97,6 +104,10 @@ export const createEmployeeService = async ({
     throw new Error('Role must be employee or team_leader')
   }
 
+  if (role === 'team_leader' && !department_id) {
+    throw new Error('Team leader must be assigned to a department')
+  }
+
   if (status && !statusWhitelist.includes(status)) {
     throw new Error('Status must be active or inactive')
   }
@@ -143,6 +154,10 @@ export const updateEmployeeService = async (id, payload, updatedBy) => {
   if (payload.first_name !== undefined) userUpdates.first_name = payload.first_name.trim()
   if (payload.last_name !== undefined) userUpdates.last_name = payload.last_name.trim()
 
+  const nextRole = payload.role !== undefined
+    ? payload.role
+    : (existing.User?.Roles?.[0]?.name || 'employee')
+
   if (payload.role !== undefined) {
     if (!roleWhitelist.includes(payload.role)) {
       throw new Error('Role must be employee or team_leader')
@@ -152,6 +167,14 @@ export const updateEmployeeService = async (id, payload, updatedBy) => {
       throw new Error('Selected role does not exist')
     }
     await upsertUserRole(existing.user_id, roleRecord.id)
+  }
+
+  const nextDepartmentId = payload.department_id !== undefined
+    ? (payload.department_id ? Number(payload.department_id) : null)
+    : existing.department_id
+
+  if (nextRole === 'team_leader' && !nextDepartmentId) {
+    throw new Error('Team leader must be assigned to a department')
   }
 
   const employeeUpdates = { updated_by: updatedBy }
@@ -172,6 +195,42 @@ export const updateEmployeeService = async (id, payload, updatedBy) => {
   await updateEmployee(id, employeeUpdates)
   const updated = await getEmployeeById(id)
   return mapEmployee(updated)
+}
+
+export const deleteEmployeeService = async (id, requesterId) => {
+  const existing = await getEmployeeById(id)
+  if (!existing) {
+    throw new Error('Employee not found')
+  }
+
+  const role = existing.User?.Roles?.[0]?.name
+  if (role === 'admin') {
+    throw new Error('Admin accounts cannot be deleted from employee management')
+  }
+
+  if (Number(existing.user_id) === Number(requesterId)) {
+    throw new Error('You cannot delete your own account')
+  }
+
+  const userId = existing.user_id
+
+  const assignedTasks = await Task.count({ where: { assigned_to: userId } })
+  if (assignedTasks > 0) {
+    throw new Error('This user has assigned tasks. Reassign or delete the tasks first.')
+  }
+
+  const ownedProjects = await Project.count({ where: { created_by: userId } })
+  if (ownedProjects > 0) {
+    throw new Error('This user owns projects. Delete the projects or transfer ownership first.')
+  }
+
+  await ProjectMember.destroy({ where: { user_id: userId } })
+  await UserRole.destroy({ where: { user_id: userId } })
+  await RefreshToken.destroy({ where: { user_id: userId } })
+  await deleteEmployeeRecord(id)
+  await deleteUserById(userId)
+
+  return { deleted: true }
 }
 
 export const updateEmployeeStatusService = async (id, status, updatedBy) => {

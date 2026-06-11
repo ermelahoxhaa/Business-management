@@ -5,7 +5,7 @@ import {
 
 export const getDepartmentsController = async (req, res) => {
   try {
-    const result = await searchDepartmentsService(req.query)
+    const result = await searchDepartmentsService(req.query, req.user)
     res.json(result)
   } catch (error) {
     res.status(400).json({ message: error.message })

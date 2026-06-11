@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, FileDown } from 'lucide-react'
 import {
@@ -10,6 +10,7 @@ import {
 } from '../services/api'
 import { downloadBlob } from '../utils/downloadFile'
 import { unwrapList } from '../utils/listResponse'
+import { scrollToElement } from '../utils/scrollToElement'
 
 const emptyFilters = {
   date_from: '',
@@ -21,6 +22,7 @@ const emptyFilters = {
 }
 
 export default function Reports() {
+  const reportResultsRef = useRef(null)
   const [reportTypes, setReportTypes] = useState([])
   const [projects, setProjects] = useState([])
   const [departments, setDepartments] = useState([])
@@ -69,6 +71,7 @@ export default function Reports() {
     try {
       const response = await previewReport(selectedType, buildFilterParams())
       setReport(response.data)
+      scrollToElement(reportResultsRef)
     } catch (err) {
       setReport(null)
       setError(err.response?.data?.message || 'Unable to generate report.')
@@ -214,7 +217,7 @@ export default function Reports() {
         )}
 
         {report && (
-          <section className="space-y-6">
+          <section ref={reportResultsRef} className="space-y-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-2xl font-semibold text-white">{report.title}</h2>

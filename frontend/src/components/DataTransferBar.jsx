@@ -2,8 +2,17 @@ import { useRef, useState } from 'react'
 import { Download, Upload } from 'lucide-react'
 import { exportEntityData, importEntityData } from '../services/api'
 import { downloadBlob } from '../utils/downloadFile'
+import { scrollToElement } from '../utils/scrollToElement'
 
-export default function DataTransferBar({ entity, filters = {}, onImported, canImport = true }) {
+export default function DataTransferBar({
+  entity,
+  title,
+  subtitle,
+  filters = {},
+  onImported,
+  canImport = true,
+  scrollToRef
+}) {
   const fileInputRef = useRef(null)
   const [busy, setBusy] = useState('')
   const [message, setMessage] = useState('')
@@ -46,7 +55,8 @@ export default function DataTransferBar({ entity, filters = {}, onImported, canI
       const result = response.data
       setMessage(`Import finished: ${result.success} succeeded, ${result.failed} failed.`)
       setImportErrors(result.errors || [])
-      if (onImported) onImported()
+      if (onImported) await Promise.resolve(onImported())
+      scrollToElement(scrollToRef)
     } catch (err) {
       setMessage(err.response?.data?.message || 'Import failed.')
     } finally {
@@ -58,8 +68,10 @@ export default function DataTransferBar({ entity, filters = {}, onImported, canI
     <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-5 shadow-xl ring-1 ring-white/5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-sm font-semibold text-white">Export / import</p>
-          <p className="mt-1 text-sm text-slate-400">Download current results or upload a CSV, Excel, or JSON file.</p>
+          <p className="text-sm font-semibold text-white">{title || 'Export / import'}</p>
+          <p className="mt-1 text-sm text-slate-400">
+            {subtitle || 'Download current results or upload a CSV, Excel, or JSON file.'}
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-2">

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import {
   createDepartment,
   createEmployee,
+  deleteEmployee,
   getDepartments,
   getEmployees,
   updateEmployee,
@@ -13,6 +14,7 @@ import { getUserRole } from '../services/auth'
 import ListSearchPanel from '../components/ListSearchPanel'
 import DataTransferBar from '../components/DataTransferBar'
 import { buildQueryParams, unwrapList } from '../utils/listResponse'
+import { scrollToElement } from '../utils/scrollToElement'
 
 const defaultForm = {
   first_name: '',
@@ -31,6 +33,7 @@ const emptyDepartmentFilters = { search: '', sort: 'name', order: 'asc' }
 export default function EmployeeManagement() {
   const userRole = getUserRole()
   const isAdmin = userRole === 'admin'
+  const isTeamLeader = userRole === 'team_leader'
   const [employees, setEmployees] = useState([])
   const [departments, setDepartments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -46,11 +49,17 @@ export default function EmployeeManagement() {
   const [editId, setEditId] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [newDepartmentName, setNewDepartmentName] = useState('')
+  const employeesListRef = useRef(null)
+  const employeeFormRef = useRef(null)
+  const departmentsListRef = useRef(null)
+  const departmentFormRef = useRef(null)
 
   const departmentMap = useMemo(
     () => Object.fromEntries(departments.map((department) => [department.id, department.name])),
     [departments]
   )
+
+  const teamLeaderDepartment = isTeamLeader && departments.length > 0 ? departments[0] : null
 
   const loadDepartments = useCallback(async (activeFilters, page = departmentPage) => {
     const response = await getDepartments(buildQueryParams({ ...activeFilters, page, limit: 50 }))
@@ -151,11 +160,13 @@ export default function EmployeeManagement() {
   const handleOpenCreate = () => {
     resetForm()
     setShowForm(true)
+    scrollToElement(employeeFormRef)
   }
 
   const handleEdit = (employee) => {
     setEditId(employee.id)
     setShowForm(true)
+    scrollToElement(employeeFormRef)
     setForm({
       first_name: employee.first_name || '',
       last_name: employee.last_name || '',
@@ -171,6 +182,11 @@ export default function EmployeeManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!isAdmin) return
+
+    if (form.role === 'team_leader' && !form.department_id) {
+      setError('Team leader must be assigned to a department')
+      return
+    }
 
     setSaving(true)
     try {
@@ -199,8 +215,33 @@ export default function EmployeeManagement() {
       await loadEmployees(filters)
       setShowForm(false)
       resetForm()
+      scrollToElement(employeesListRef)
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to save employee')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (employee) => {
+    if (!isAdmin) return
+
+    const label = `${employee.first_name} ${employee.last_name}`.trim() || employee.email
+    const confirmed = window.confirm(`Delete ${label}? This cannot be undone.`)
+    if (!confirmed) return
+
+    setSaving(true)
+    setError('')
+    try {
+      await deleteEmployee(employee.id)
+      if (editId === employee.id) {
+        setShowForm(false)
+        resetForm()
+      }
+      await loadEmployees(filters)
+      scrollToElement(employeesListRef)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to delete employee')
     } finally {
       setSaving(false)
     }
@@ -229,6 +270,7 @@ export default function EmployeeManagement() {
       await createDepartment({ name: newDepartmentName.trim() })
       setNewDepartmentName('')
       await loadDepartments()
+      scrollToElement(departmentsListRef)
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to create department')
     } finally {
@@ -263,7 +305,9 @@ export default function EmployeeManagement() {
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300/80">Employee Management</p>
               <h1 className="mt-4 text-4xl font-semibold text-white">Manage your team</h1>
               <p className="mt-3 max-w-2xl text-sm text-slate-300">
-                {isAdmin ? 'Manage employees, roles, departments, and status.' : 'View employees in your team and department.'}
+                {isAdmin
+                  ? 'Manage employees and team leaders, assign departments, and control account status.'
+                  : 'View employees assigned to your department by the administrator.'}
               </p>
             </div>
             {isAdmin && (
@@ -277,6 +321,28 @@ export default function EmployeeManagement() {
             )}
           </div>
         </section>
+
+        {isTeamLeader && (
+          <section className={`rounded-[2rem] border p-6 shadow-2xl ring-1 ${
+            teamLeaderDepartment
+              ? 'border-sky-500/20 bg-sky-500/10 ring-sky-500/20'
+              : 'border-amber-500/20 bg-amber-500/10 ring-amber-500/20'
+          }`}>
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-sky-200/80">Your department</p>
+            {teamLeaderDepartment ? (
+              <>
+                <h2 className="mt-2 text-2xl font-semibold text-white">{teamLeaderDepartment.name}</h2>
+                <p className="mt-2 text-sm text-sky-100/80">
+                  You only see employees in this department. The administrator assigns your department and team members.
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-amber-100">
+                No department assigned yet. Ask the administrator to assign you to a department in Employee Management.
+              </p>
+            )}
+          </section>
+        )}
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[
@@ -293,7 +359,16 @@ export default function EmployeeManagement() {
           ))}
         </section>
 
+        <div className="space-y-4 rounded-[2rem] border border-sky-500/15 bg-sky-500/5 p-2 sm:p-4">
+          <p className="px-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-300/90">
+            Employees · search & data transfer
+          </p>
+
         <ListSearchPanel
+          title="Search employees"
+          subtitle="Filter by name, email, role, or department. Results appear in the employee list below."
+          searchPlaceholder="Search employees by name or email..."
+          scrollToRef={employeesListRef}
           search={filters.search}
           onSearchChange={(value) => setFilters((current) => ({ ...current, search: value }))}
           onSubmit={handleSearchSubmit}
@@ -314,40 +389,58 @@ export default function EmployeeManagement() {
           onPageChange={handleEmployeePageChange}
         >
           <div className="grid gap-4 md:grid-cols-2">
-            <select
-              name="role"
-              value={filters.role}
-              onChange={handleFilterChange}
-              className="rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
-            >
-              <option value="">All roles</option>
-              <option value="employee">Employee</option>
-              <option value="team_leader">Team Leader</option>
-            </select>
-            <select
-              name="department_id"
-              value={filters.department_id}
-              onChange={handleFilterChange}
-              className="rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
-            >
-              <option value="">All departments</option>
-              {departments.map((department) => (
-                <option key={department.id} value={department.id}>
-                  {department.name}
-                </option>
-              ))}
-            </select>
+            {isAdmin && (
+              <select
+                name="role"
+                value={filters.role}
+                onChange={handleFilterChange}
+                className="rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+              >
+                <option value="">All roles</option>
+                <option value="employee">Employee</option>
+                <option value="team_leader">Team Leader</option>
+              </select>
+            )}
+            {isAdmin && (
+              <select
+                name="department_id"
+                value={filters.department_id}
+                onChange={handleFilterChange}
+                className="rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+              >
+                <option value="">All departments</option>
+                {departments.map((department) => (
+                  <option key={department.id} value={department.id}>
+                    {department.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </ListSearchPanel>
 
         <DataTransferBar
           entity="employees"
+          title="Export / import employees"
+          subtitle="Download the current employee list or upload a CSV, Excel, or JSON file with new staff records."
           filters={buildQueryParams(filters)}
           canImport={isAdmin}
+          scrollToRef={employeesListRef}
           onImported={() => loadEmployees(filters)}
         />
+        </div>
+
+        {isAdmin && (
+        <div className="space-y-4 rounded-[2rem] border border-violet-500/15 bg-violet-500/5 p-2 sm:p-4">
+          <p className="px-2 text-xs font-semibold uppercase tracking-[0.22em] text-violet-300/90">
+            Departments · search & data transfer
+          </p>
 
         <ListSearchPanel
+          title="Search departments"
+          subtitle="Filter departments by name. Results appear in the departments list below."
+          searchPlaceholder="Search departments by name..."
+          scrollToRef={departmentsListRef}
           search={departmentFilters.search}
           onSearchChange={(value) => setDepartmentFilters((current) => ({ ...current, search: value }))}
           onSubmit={handleDepartmentSearchSubmit}
@@ -368,13 +461,21 @@ export default function EmployeeManagement() {
 
         <DataTransferBar
           entity="departments"
+          title="Export / import departments"
+          subtitle="Download the department list or upload a file to add departments in bulk."
           filters={buildQueryParams(departmentFilters)}
           canImport={isAdmin}
+          scrollToRef={departmentsListRef}
           onImported={() => loadDepartments(departmentFilters)}
         />
+        </div>
+        )}
 
-        {departments.length > 0 && (
-          <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+        {isAdmin && departments.length > 0 && (
+          <section
+            ref={departmentsListRef}
+            className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5"
+          >
             <h2 className="mb-4 text-xl font-semibold text-white">Departments</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {departments.map((department) => (
@@ -390,7 +491,10 @@ export default function EmployeeManagement() {
         )}
 
         {isAdmin && (
-        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+        <section
+          ref={departmentFormRef}
+          className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5"
+        >
           <h2 className="text-2xl font-semibold text-white mb-6">Create department</h2>
           <form onSubmit={handleCreateDepartment} className="flex flex-col gap-3 sm:flex-row">
             <input
@@ -411,7 +515,10 @@ export default function EmployeeManagement() {
         )}
 
         {showForm && isAdmin && (
-        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+        <section
+          ref={employeeFormRef}
+          className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5"
+        >
           <h2 className="text-2xl font-semibold text-white mb-6">{editId ? 'Edit Employee' : 'Create Employee'}</h2>
           <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-4">
@@ -484,14 +591,17 @@ export default function EmployeeManagement() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">Department</label>
+                <label className="mb-2 block text-sm font-medium text-slate-300">
+                  Department{form.role === 'team_leader' ? ' (required for team leader)' : ''}
+                </label>
                 <select
                   name="department_id"
                   value={form.department_id}
                   onChange={(e) => setForm((current) => ({ ...current, department_id: e.target.value }))}
+                  required={form.role === 'team_leader'}
                   className="w-full rounded-3xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                 >
-                  <option value="">No department</option>
+                  <option value="">{form.role === 'team_leader' ? 'Select department' : 'No department'}</option>
                   {departments.map((department) => (
                     <option key={department.id} value={department.id}>
                       {department.name}
@@ -548,8 +658,13 @@ export default function EmployeeManagement() {
         </section>
         )}
 
-        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
-          <h2 className="text-2xl font-semibold text-white mb-6">Employees</h2>
+        <section
+          ref={employeesListRef}
+          className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5"
+        >
+          <h2 className="text-2xl font-semibold text-white mb-6">
+            {isAdmin ? 'Employees & Team Leaders' : 'Department Employees'}
+          </h2>
           {loading ? (
             <p className="text-slate-300">Loading employees...</p>
           ) : error ? (
@@ -607,6 +722,14 @@ export default function EmployeeManagement() {
                               className="rounded-2xl bg-slate-700 px-3 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-600 transition"
                             >
                               {employee.status === 'active' ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(employee)}
+                              disabled={saving}
+                              className="rounded-2xl bg-rose-600 px-3 py-1 text-xs font-semibold text-white hover:bg-rose-500 transition disabled:opacity-50"
+                            >
+                              Delete
                             </button>
                           </div>
                         ) : (

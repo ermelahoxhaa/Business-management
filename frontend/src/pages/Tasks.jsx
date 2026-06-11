@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { createTask, deleteTask, getTasks, updateTask, getProjects, getUsers, getComments, createComment } from '../services/api'
@@ -23,6 +23,7 @@ export default function Tasks() {
   const currentUser = getCurrentUser()
   const userRole = getUserRole()
   const isAdmin = userRole === 'admin'
+  const tasksListRef = useRef(null)
   const isTeamLeader = userRole === 'team_leader'
   const [form, setForm] = useState({
     title: '',
@@ -459,6 +460,7 @@ export default function Tasks() {
         )}
 
         <ListSearchPanel
+          scrollToRef={tasksListRef}
           search={searchQuery.search}
           onSearchChange={(value) => setSearchQuery((current) => ({ ...current, search: value }))}
           onSubmit={handleSearchSubmit}
@@ -574,10 +576,11 @@ export default function Tasks() {
         <DataTransferBar
           entity="tasks"
           filters={buildQueryParams(searchQuery)}
+          scrollToRef={tasksListRef}
           onImported={() => loadTasks(searchQuery)}
         />
 
-        <section className="grid gap-6">
+        <section ref={tasksListRef} className="grid gap-6">
           {tasks.length === 0 ? (
             <div className="rounded-[2rem] border border-dashed border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400 shadow-xl">
               {isTeamLeader ? 'No tasks found for your projects yet.' : 'No tasks available yet.'}

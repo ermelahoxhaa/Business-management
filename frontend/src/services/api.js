@@ -110,6 +110,7 @@ export const getEmployees = (params) => API.get('/employees', { params })
 export const createEmployee = (data) => API.post('/employees', data)
 export const updateEmployee = (id, data) => API.put(`/employees/${id}`, data)
 export const updateEmployeeStatus = (id, status) => API.patch(`/employees/${id}/status`, { status })
+export const deleteEmployee = (id) => API.delete(`/employees/${id}`)
 
 export const exportEntityData = (entity, format, params) =>
   API.get(`/data-transfer/${entity}/export`, {

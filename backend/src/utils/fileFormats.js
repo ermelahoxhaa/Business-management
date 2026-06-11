@@ -43,16 +43,52 @@ export const parseUploadedFile = (file) => {
   }
 
   if (format === 'csv') {
-    const text = file.buffer.toString('utf8').trim()
+    const parseCsvLine = (line) => {
+      const values = []
+      let current = ''
+      let inQuotes = false
+
+      for (let index = 0; index < line.length; index += 1) {
+        const char = line[index]
+
+        if (char === '"') {
+          if (inQuotes && line[index + 1] === '"') {
+            current += '"'
+            index += 1
+          } else {
+            inQuotes = !inQuotes
+          }
+          continue
+        }
+
+        if (char === ',' && !inQuotes) {
+          values.push(current.trim())
+          current = ''
+          continue
+        }
+
+        current += char
+      }
+
+      values.push(current.trim())
+      return values
+    }
+
+    const text = file.buffer.toString('utf8').replace(/^\uFEFF/, '').trim()
     if (!text) return []
-    const lines = text.split(/\r?\n/).filter(Boolean)
-    const headers = lines[0].split(',').map((value) => value.trim().replace(/^"|"$/g, ''))
+
+    const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0)
+    const headers = parseCsvLine(lines[0]).map((value) =>
+      value.replace(/^"|"$/g, '').replace(/^\uFEFF/, '').trim()
+    )
+
     return lines.slice(1).map((line) => {
-      const values = line.match(/("([^"]|"")*"|[^,]*)/g)?.map((cell) =>
+      const values = parseCsvLine(line).map((cell) =>
         cell.replace(/^"|"$/g, '').replace(/""/g, '"').trim()
-      ) || []
+      )
+
       return headers.reduce((row, header, index) => {
-        row[header] = values[index] || ''
+        row[header] = values[index] ?? ''
         return row
       }, {})
     })

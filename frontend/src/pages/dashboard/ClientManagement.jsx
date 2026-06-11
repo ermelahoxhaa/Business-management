@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, FileText, TrendingUp, Plus } from 'lucide-react'
 import {
@@ -29,6 +29,7 @@ const formatClientName = (client) =>
   [client.contact_name, client.company_name].filter(Boolean).join(' - ')
 
 export default function ClientManagement() {
+  const clientsListRef = useRef(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -321,6 +322,7 @@ export default function ClientManagement() {
         </section>
 
         <ListSearchPanel
+          scrollToRef={clientsListRef}
           search={searchQuery.search}
           onSearchChange={(value) => setSearchQuery((current) => ({ ...current, search: value }))}
           onSubmit={handleSearchSubmit}
@@ -354,6 +356,7 @@ export default function ClientManagement() {
         <DataTransferBar
           entity="clients"
           filters={buildQueryParams(searchQuery)}
+          scrollToRef={clientsListRef}
           onImported={() => loadClients(searchQuery, listPage)}
         />
 
@@ -363,7 +366,10 @@ export default function ClientManagement() {
           </div>
         )}
 
-        <section className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5">
+        <section
+          ref={clientsListRef}
+          className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl ring-1 ring-white/5"
+        >
           {loading ? (
             <div className="rounded-[2rem] border border-dashed border-slate-800 bg-slate-950/50 p-8 text-center text-slate-400">
               Loading clients...

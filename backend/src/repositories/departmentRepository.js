@@ -5,8 +5,12 @@ export const findDepartmentByName = (name) => Department.findOne({ where: { name
 
 export const createDepartment = (data) => Department.create(data)
 
-export const searchDepartments = async ({ search, sort, order, limit, offset }) => {
+export const searchDepartments = async ({ search, departmentId, sort, order, limit, offset }) => {
   const where = {}
+
+  if (departmentId) {
+    where.id = departmentId
+  }
 
   if (search) {
     const value = `%${search}%`
